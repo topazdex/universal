@@ -1,0 +1,12 @@
+[submodule "packages/universal-router/lib/forge-std"]
+	path = packages/universal-router/lib/forge-std
+	url = https://github.com/foundry-rs/forge-std
+[submodule "packages/universal-router/lib/solmate"]
+	path = packages/universal-router/lib/solmate
+	url = https://github.com/transmissions11/solmate
+[submodule "packages/universal-router/lib/permit2"]
+	path = packages/universal-router/lib/permit2
+	url = https://github.com/Uniswap/permit2
+[submodule "packages/universal-router/lib/openzeppelin-contracts"]
+	path = packages/universal-router/lib/openzeppelin-contracts
+	url = https://github.com/OpenZeppelin/openzeppelin-contracts

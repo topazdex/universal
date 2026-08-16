@@ -1,0 +1,6 @@
+contracts/=contracts/
+script/=script/
+forge-std/=lib/forge-std/src/
+solmate/=lib/solmate/
+permit2/=lib/permit2/
+@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/

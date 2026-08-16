@@ -1,0 +1,18 @@
+node_modules/
+.env
+.env.local
+.DS_Store
+
+# foundry
+out/
+cache/
+broadcast/
+
+# typescript / build output
+dist/
+build/
+coverage/
+*.tsbuildinfo
+.yarn/*
+!.yarn/patches
+!.yarn/releases
