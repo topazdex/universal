@@ -458,7 +458,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ethersproject/bignumber@npm:5.8.0, @ethersproject/bignumber@npm:^5.5.0, @ethersproject/bignumber@npm:^5.8.0":
+"@ethersproject/bignumber@npm:5.8.0, @ethersproject/bignumber@npm:^5.5.0, @ethersproject/bignumber@npm:^5.7.0, @ethersproject/bignumber@npm:^5.8.0":
   version: 5.8.0
   resolution: "@ethersproject/bignumber@npm:5.8.0"
   dependencies:
@@ -1132,13 +1132,71 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@topaz/router-sdk@workspace:*, @topaz/router-sdk@workspace:packages/router-sdk":
+  version: 0.0.0-use.local
+  resolution: "@topaz/router-sdk@workspace:packages/router-sdk"
+  dependencies:
+    "@ethersproject/abi": "npm:^5.7.0"
+    "@ethersproject/solidity": "npm:^5.7.0"
+    "@topaz/v2-sdk": "workspace:*"
+    "@topaz/v3-sdk": "workspace:*"
+    "@types/jest": "npm:^29.5.14"
+    "@types/node": "npm:^22.10.2"
+    "@uniswap/sdk-core": "npm:^7.19.1"
+    dotenv: "npm:^17.4.2"
+    ethers: "npm:^5.7.2"
+    jest: "npm:^29.7.0"
+    jsbi: "npm:^3.2.5"
+    tiny-invariant: "npm:^1.3.3"
+    ts-jest: "npm:^29.2.5"
+    typescript: "npm:^5.7.2"
+  languageName: unknown
+  linkType: soft
+
+"@topaz/sdk-core@workspace:*, @topaz/sdk-core@workspace:packages/sdk-core":
+  version: 0.0.0-use.local
+  resolution: "@topaz/sdk-core@workspace:packages/sdk-core"
+  dependencies:
+    "@types/jest": "npm:^29.5.14"
+    "@types/node": "npm:^22.10.2"
+    "@uniswap/sdk-core": "npm:^7.19.1"
+    jest: "npm:^29.7.0"
+    tiny-invariant: "npm:^1.3.3"
+    ts-jest: "npm:^29.2.5"
+    typescript: "npm:^5.7.2"
+  languageName: unknown
+  linkType: soft
+
+"@topaz/universal-router-sdk@workspace:packages/universal-router-sdk":
+  version: 0.0.0-use.local
+  resolution: "@topaz/universal-router-sdk@workspace:packages/universal-router-sdk"
+  dependencies:
+    "@ethersproject/abi": "npm:^5.7.0"
+    "@ethersproject/bignumber": "npm:^5.7.0"
+    "@topaz/router-sdk": "workspace:*"
+    "@topaz/sdk-core": "workspace:*"
+    "@topaz/v2-sdk": "workspace:*"
+    "@topaz/v3-sdk": "workspace:*"
+    "@types/jest": "npm:^29.5.14"
+    "@types/node": "npm:^22.10.2"
+    "@uniswap/sdk-core": "npm:^7.19.1"
+    dotenv: "npm:^17.4.2"
+    ethers: "npm:^5.7.2"
+    jest: "npm:^29.7.0"
+    jsbi: "npm:^3.2.5"
+    tiny-invariant: "npm:^1.3.3"
+    ts-jest: "npm:^29.2.5"
+    typescript: "npm:^5.7.2"
+  languageName: unknown
+  linkType: soft
+
 "@topaz/universal-router@workspace:packages/universal-router":
   version: 0.0.0-use.local
   resolution: "@topaz/universal-router@workspace:packages/universal-router"
   languageName: unknown
   linkType: soft
 
-"@topaz/v2-sdk@workspace:packages/v2-sdk":
+"@topaz/v2-sdk@workspace:*, @topaz/v2-sdk@workspace:packages/v2-sdk":
   version: 0.0.0-use.local
   resolution: "@topaz/v2-sdk@workspace:packages/v2-sdk"
   dependencies:
@@ -1158,7 +1216,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@topaz/v3-sdk@workspace:packages/v3-sdk":
+"@topaz/v3-sdk@workspace:*, @topaz/v3-sdk@workspace:packages/v3-sdk":
   version: 0.0.0-use.local
   resolution: "@topaz/v3-sdk@workspace:packages/v3-sdk"
   dependencies:
