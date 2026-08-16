@@ -16,7 +16,7 @@ import { encodeRouteToPath, Pool as CLPool, Route as CLRoute } from '@topaz/v3-s
 import { Currency, CurrencyAmount, Percent, Token, TradeType } from '@uniswap/sdk-core'
 import invariant from 'tiny-invariant'
 
-import { CONTRACT_BALANCE, ROUTER_AS_RECIPIENT, SENDER_AS_RECIPIENT } from './constants'
+import { CONTRACT_BALANCE, ETH_ADDRESS, ROUTER_AS_RECIPIENT, SENDER_AS_RECIPIENT } from './constants'
 import { CommandType, RoutePlanner } from './utils/routerCommands'
 
 export const UNIVERSAL_ROUTER_ABI = [
@@ -101,29 +101,36 @@ export abstract class SwapRouter {
       SwapRouter.addSwap(planner, trade, swap, options, swapRecipient, routerMustCustody, payerIsUser)
     }
 
-    let minimumAmountOut = trade.minimumAmountOut(options.slippageTolerance)
+    const minimumAmountOut = trade.minimumAmountOut(options.slippageTolerance)
+    const minimumAmountOutAfterFee = options.fee
+      ? minimumAmountOut.subtract(minimumAmountOut.multiply(options.fee.fee))
+      : minimumAmountOut
     const finalRecipient = options.recipient ?? SENDER_AS_RECIPIENT
 
-    if (options.fee) {
-      const outputToken = trade.outputAmount.currency.isNative
-        ? '0x0000000000000000000000000000000000000000'
-        : (trade.outputAmount.currency as Token).address
-      planner.addCommand(CommandType.PAY_PORTION, [
-        outputToken,
-        options.fee.recipient,
-        options.fee.fee.multiply(10_000).quotient.toString()
-      ])
-      minimumAmountOut = minimumAmountOut.subtract(minimumAmountOut.multiply(options.fee.fee))
-    }
-
     if (routerMustCustody) {
-      if (outputIsNative) {
-        planner.addCommand(CommandType.UNWRAP_WETH, [finalRecipient, minimumAmountOut.quotient.toString()])
+      const outputToken = outputIsNative ? ETH_ADDRESS : (trade.outputAmount.currency as Token).address
+
+      // a fee on native output has to be paid after unwrapping: until then the router holds WBNB,
+      // and paying a portion of its (empty) BNB balance would hand the collector nothing
+      if (outputIsNative && options.fee) {
+        planner.addCommand(CommandType.UNWRAP_WETH, [ROUTER_AS_RECIPIENT, minimumAmountOut.quotient.toString()])
+      }
+
+      if (options.fee) {
+        planner.addCommand(CommandType.PAY_PORTION, [
+          outputToken,
+          options.fee.recipient,
+          options.fee.fee.multiply(10_000).quotient.toString()
+        ])
+      }
+
+      if (outputIsNative && !options.fee) {
+        planner.addCommand(CommandType.UNWRAP_WETH, [finalRecipient, minimumAmountOutAfterFee.quotient.toString()])
       } else {
         planner.addCommand(CommandType.SWEEP, [
-          (trade.outputAmount.currency as Token).address,
+          outputToken,
           finalRecipient,
-          minimumAmountOut.quotient.toString()
+          minimumAmountOutAfterFee.quotient.toString()
         ])
       }
     }

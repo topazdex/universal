@@ -9,6 +9,9 @@ export const WBNB_ADDRESS = '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c'
 
 export const ADDRESS_ZERO = '0x0000000000000000000000000000000000000000'
 
+/** The router reads address(0) as "this is native BNB, not a token" */
+export const ETH_ADDRESS = ADDRESS_ZERO
+
 /** Sentinel recipients understood by the router */
 export const SENDER_AS_RECIPIENT = '0x0000000000000000000000000000000000000001'
 export const ROUTER_AS_RECIPIENT = '0x0000000000000000000000000000000000000002'

@@ -1221,6 +1221,7 @@ __metadata:
     "@types/jest": "npm:^29.5.14"
     "@types/node": "npm:^22.10.2"
     "@uniswap/sdk-core": "npm:^7.19.1"
+    dotenv: "npm:^17.4.2"
     jest: "npm:^29.7.0"
     tiny-invariant: "npm:^1.3.3"
     ts-jest: "npm:^29.2.5"

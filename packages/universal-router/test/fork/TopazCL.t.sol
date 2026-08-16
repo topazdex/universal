@@ -193,8 +193,9 @@ contract TopazCLForkTest is BaseForkFixture {
             abi.encodePacked(bytes1(uint8(Commands.WRAP_ETH)), bytes1(uint8(Commands.V3_SWAP_EXACT_IN)));
         bytes[] memory inputs = new bytes[](2);
         inputs[0] = abi.encode(Constants.ADDRESS_THIS, WBNB_IN);
-        inputs[1] =
-            abi.encode(recipient, Constants.CONTRACT_BALANCE, expected, clPath(WBNB, TICK_SPACING_VOLATILE, USDT), false);
+        inputs[1] = abi.encode(
+            recipient, Constants.CONTRACT_BALANCE, expected, clPath(WBNB, TICK_SPACING_VOLATILE, USDT), false
+        );
 
         executeWithValue(commands, inputs, WBNB_IN);
 

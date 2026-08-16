@@ -25,9 +25,7 @@ contract PoolAddressesForkTest is BaseForkFixture {
     }
 
     function test_derivedClVolatilePoolMatchesFactory() public view {
-        assertEq(
-            derivedClPool(WBNB, USDT, TICK_SPACING_VOLATILE), address(clPool(WBNB, USDT, TICK_SPACING_VOLATILE))
-        );
+        assertEq(derivedClPool(WBNB, USDT, TICK_SPACING_VOLATILE), address(clPool(WBNB, USDT, TICK_SPACING_VOLATILE)));
     }
 
     function test_derivedClStablePoolMatchesFactory() public view {

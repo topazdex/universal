@@ -94,8 +94,9 @@ abstract contract V2SwapRouter is RouterImmutables, Permit2Payments {
         Route[] memory routes,
         address payer
     ) internal {
-        (uint256 amountIn, address firstPair) =
-            TopazV2Library.getAmountInMultihop(TOPAZ_V2_FACTORY, TOPAZ_V2_IMPLEMENTATION, amountOut, routes);
+        (uint256 amountIn, address firstPair) = TopazV2Library.getAmountInMultihop(
+            TOPAZ_V2_FACTORY, TOPAZ_V2_IMPLEMENTATION, amountOut, routes
+        );
         if (amountIn > amountInMaximum) revert V2TooMuchRequested();
 
         payOrPermit2Transfer(routes[0].from, payer, firstPair, amountIn);

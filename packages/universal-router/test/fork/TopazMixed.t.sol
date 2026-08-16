@@ -18,8 +18,7 @@ contract TopazMixedForkTest is BaseForkFixture {
     uint256 constant WBNB_IN = 0.05 ether;
 
     function test_clThenV2StableExactInput() public {
-        bytes memory mixedPath =
-            abi.encodePacked(WBNB, uint24(TICK_SPACING_VOLATILE), USDT, MixedRoute.V2_STABLE, USDC);
+        bytes memory mixedPath = abi.encodePacked(WBNB, uint24(TICK_SPACING_VOLATILE), USDT, MixedRoute.V2_STABLE, USDC);
         (uint256 expected,,,) = mixedQuoter.quoteExactInput(mixedPath, WBNB_IN);
         assertGt(expected, 0);
 
@@ -30,8 +29,7 @@ contract TopazMixedForkTest is BaseForkFixture {
             abi.encodePacked(bytes1(uint8(Commands.V3_SWAP_EXACT_IN)), bytes1(uint8(Commands.V2_SWAP_EXACT_IN)));
         bytes[] memory inputs = new bytes[](2);
         inputs[0] = abi.encode(Constants.ADDRESS_THIS, WBNB_IN, 0, clPath(WBNB, TICK_SPACING_VOLATILE, USDT), true);
-        inputs[1] =
-            abi.encode(recipient, Constants.CONTRACT_BALANCE, expected, singleRoute(USDT, USDC, true), false);
+        inputs[1] = abi.encode(recipient, Constants.CONTRACT_BALANCE, expected, singleRoute(USDT, USDC, true), false);
 
         execute(commands, inputs);
 
@@ -41,8 +39,7 @@ contract TopazMixedForkTest is BaseForkFixture {
 
     function test_v2StableThenClExactInput() public {
         uint256 usdcIn = 10e18;
-        bytes memory mixedPath =
-            abi.encodePacked(USDC, MixedRoute.V2_STABLE, USDT, uint24(TICK_SPACING_VOLATILE), WBNB);
+        bytes memory mixedPath = abi.encodePacked(USDC, MixedRoute.V2_STABLE, USDT, uint24(TICK_SPACING_VOLATILE), WBNB);
         (uint256 expected,,,) = mixedQuoter.quoteExactInput(mixedPath, usdcIn);
         assertGt(expected, 0);
 
@@ -134,12 +131,11 @@ contract TopazMixedForkTest is BaseForkFixture {
         approveViaPermit2(WBNB);
 
         bytes memory commands = abi.encodePacked(
-            bytes1(uint8(Commands.V3_SWAP_EXACT_IN)),
-            bytes1(uint8(Commands.PAY_PORTION)),
-            bytes1(uint8(Commands.SWEEP))
+            bytes1(uint8(Commands.V3_SWAP_EXACT_IN)), bytes1(uint8(Commands.PAY_PORTION)), bytes1(uint8(Commands.SWEEP))
         );
         bytes[] memory inputs = new bytes[](3);
-        inputs[0] = abi.encode(Constants.ADDRESS_THIS, WBNB_IN, expected, clPath(WBNB, TICK_SPACING_VOLATILE, USDT), true);
+        inputs[0] =
+            abi.encode(Constants.ADDRESS_THIS, WBNB_IN, expected, clPath(WBNB, TICK_SPACING_VOLATILE, USDT), true);
         inputs[1] = abi.encode(USDT, feeCollector, feeBips);
         inputs[2] = abi.encode(USDT, recipient, 0);
 

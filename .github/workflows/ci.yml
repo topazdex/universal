@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  FOUNDRY_DISABLE_NIGHTLY_WARNING: '1'
+  BSC_MAINNET_RPC: ${{ secrets.BSC_MAINNET_RPC }}
+  FORK_BLOCK: '116350000'
+
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: foundry-rs/foundry-toolchain@v1
+      - name: Build
+        working-directory: packages/universal-router
+        run: forge build
+      - name: Format check
+        working-directory: packages/universal-router
+        run: forge fmt --check
+      - name: Fork tests
+        working-directory: packages/universal-router
+        # every test forks BNB Chain, so without an RPC there is nothing meaningful to run
+        if: env.BSC_MAINNET_RPC != ''
+        run: forge test -vv
+
+  packages:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: foundry-rs/foundry-toolchain@v1
+      - name: Enable corepack
+        run: corepack enable
+      - name: Install
+        run: yarn install --immutable
+      - name: Build the router artifact the end to end tests deploy
+        working-directory: packages/universal-router
+        run: forge build
+      - name: Build
+        run: yarn build
+      - name: Typecheck
+        run: yarn lint
+      # the TypeScript suites boot an anvil fork and deploy onto it; they self-skip without an RPC
+      - name: Test
+        run: yarn test

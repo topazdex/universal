@@ -49,6 +49,8 @@ export interface TopazRouterConstructorArgs {
   quoteProvider?: QuoteProvider
   /** Needed only when the caller asks for executable calldata */
   universalRouterAddress?: string
+  /** How long the pool list from the subgraphs is reused before refetching. Default 5 minutes. */
+  subgraphCacheTtlMs?: number
 }
 
 /**
@@ -66,7 +68,8 @@ export class TopazRouter {
   private readonly quoteProvider: QuoteProvider
   private readonly universalRouterAddress?: string
 
-  private subgraphCache: { v2: V2SubgraphPool[]; cl: CLSubgraphPool[] } | undefined
+  private subgraphCache: { v2: V2SubgraphPool[]; cl: CLSubgraphPool[]; fetchedAt: number } | undefined
+  private readonly subgraphCacheTtlMs: number
 
   public constructor(args: TopazRouterConstructorArgs) {
     this.provider = args.provider
@@ -76,6 +79,7 @@ export class TopazRouter {
     this.poolProvider = args.poolProvider ?? new PoolProvider(this.chainId, multicall)
     this.quoteProvider = args.quoteProvider ?? new QuoteProvider(multicall)
     this.universalRouterAddress = args.universalRouterAddress
+    this.subgraphCacheTtlMs = args.subgraphCacheTtlMs ?? 5 * 60 * 1000
   }
 
   public async route(
@@ -167,13 +171,15 @@ export class TopazRouter {
     blockNumber: number,
     config: RoutingConfig
   ): Promise<TPool[]> {
-    if (!this.subgraphCache) {
+    // the pool list only changes when pools are created or drained, so it is cached; pool state
+    // itself is always read fresh from the chain below
+    if (!this.subgraphCache || Date.now() - this.subgraphCache.fetchedAt > this.subgraphCacheTtlMs) {
       const count = config.subgraphPoolCount ?? 500
       const [v2, cl] = await Promise.all([
         this.subgraphProvider.getV2Pools(count),
         this.subgraphProvider.getCLPools(count)
       ])
-      this.subgraphCache = { v2, cl }
+      this.subgraphCache = { v2, cl, fetchedAt: Date.now() }
     }
 
     const allowed = allowedTokenSet(currencyIn, currencyOut, this.subgraphCache)

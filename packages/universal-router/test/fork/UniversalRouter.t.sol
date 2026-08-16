@@ -64,8 +64,7 @@ contract UniversalRouterForkTest is BaseForkFixture {
 
     function test_wrapAndUnwrapReturnsNativeBnb() public {
         uint256 amount = 1 ether;
-        bytes memory commands =
-            abi.encodePacked(bytes1(uint8(Commands.WRAP_ETH)), bytes1(uint8(Commands.UNWRAP_WETH)));
+        bytes memory commands = abi.encodePacked(bytes1(uint8(Commands.WRAP_ETH)), bytes1(uint8(Commands.UNWRAP_WETH)));
         bytes[] memory inputs = new bytes[](2);
         inputs[0] = abi.encode(Constants.ADDRESS_THIS, amount);
         inputs[1] = abi.encode(recipient, amount);

@@ -147,26 +147,21 @@ abstract contract V3SwapRouter is RouterImmutables, Permit2Payments, ICLSwapCall
         (address tokenIn, int24 tickSpacing, address tokenOut) = path.decodeFirstPool();
 
         zeroForOne = isExactIn ? tokenIn < tokenOut : tokenOut < tokenIn;
-        (amount0Delta, amount1Delta) = ICLPool(computePoolAddress(tokenIn, tokenOut, tickSpacing)).swap(
-            recipient,
-            zeroForOne,
-            amount,
-            (zeroForOne ? MIN_SQRT_RATIO + 1 : MAX_SQRT_RATIO - 1),
-            abi.encode(path, payer)
-        );
+        (amount0Delta, amount1Delta) = ICLPool(computePoolAddress(tokenIn, tokenOut, tickSpacing))
+            .swap(
+                recipient,
+                zeroForOne,
+                amount,
+                (zeroForOne ? MIN_SQRT_RATIO + 1 : MAX_SQRT_RATIO - 1),
+                abi.encode(path, payer)
+            );
     }
 
-    function computePoolAddress(address tokenA, address tokenB, int24 tickSpacing)
-        private
-        view
-        returns (address pool)
-    {
+    function computePoolAddress(address tokenA, address tokenB, int24 tickSpacing) private view returns (address pool) {
         (address token0, address token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
         bytes32 salt = keccak256(abi.encode(token0, token1, tickSpacing));
         pool = Clones.predictDeterministicAddress({
-            implementation: TOPAZ_CL_IMPLEMENTATION,
-            salt: salt,
-            deployer: TOPAZ_CL_FACTORY
+            implementation: TOPAZ_CL_IMPLEMENTATION, salt: salt, deployer: TOPAZ_CL_FACTORY
         });
     }
 }

@@ -11,7 +11,7 @@ import {
 import { BNB, CurrencyAmount, Percent, Token, TradeType, USDC, USDT, WBNB } from '@topaz/sdk-core'
 import { Pool as V2Pool } from '@topaz/v2-sdk'
 import { CL_QUOTER_V2_ADDRESS, Pool as CLPool, SwapQuoter, TickSpacing } from '@topaz/v3-sdk'
-import { BigNumber, Contract, providers, Wallet } from 'ethers'
+import { BigNumber, Contract, providers, utils, Wallet } from 'ethers'
 
 import { PERMIT2_ADDRESS } from './constants'
 import { SwapRouter } from './swapRouter'
@@ -148,6 +148,11 @@ describeIfRpc('Universal Router SDK end to end against Topaz mainnet', () => {
 
   function deadline(): number {
     return Math.floor(Date.now() / 1000) + 1800
+  }
+
+  /** A plain address with no code, so receiving BNB cannot be intercepted */
+  function makeFeeCollector(label: string): string {
+    return new Wallet(utils.keccak256(utils.toUtf8Bytes(label))).address
   }
 
   it('swaps native BNB into USDT through a CL pool', async () => {
@@ -346,6 +351,70 @@ describeIfRpc('Universal Router SDK end to end against Topaz mainnet', () => {
     const received = (await provider.getBalance(account)).sub(before).add(gasCost)
 
     expect(received.toString()).toEqual(quoted.toString())
+  }, 180_000)
+
+  it('takes an interface fee out of native output, after unwrapping', async () => {
+    // fund with USDT first, then sell it for native BNB with a fee on the output
+    const clPool = await loadCLPool(WBNB, USDT, TickSpacing.LOW)
+    const fundRoute = new RouteCL([clPool], BNB_NATIVE, USDT)
+    const fundIn = CurrencyAmount.fromRawAmount(BNB_NATIVE, '100000000000000000')
+    const fundQuote = await quoteCL(fundRoute as never, fundIn.wrapped as never, TradeType.EXACT_INPUT)
+    const fundTrade = tradeOf(
+      [
+        {
+          route: fundRoute,
+          inputAmount: fundIn,
+          outputAmount: CurrencyAmount.fromRawAmount(USDT, fundQuote.toString())
+        }
+      ],
+      TradeType.EXACT_INPUT
+    )
+    const funding = SwapRouter.swapCallParameters(fundTrade, {
+      slippageTolerance: SLIPPAGE,
+      recipient: account,
+      deadline: deadline()
+    })
+    await send(funding.calldata, funding.value)
+
+    await (await usdt.connect(signer).approve(PERMIT2_ADDRESS, BigNumber.from(2).pow(256).sub(1))).wait()
+    const permit2 = new Contract(PERMIT2_ADDRESS, PERMIT2_ABI, signer)
+    await (
+      await permit2.approve(USDT.address, routerAddress, BigNumber.from(2).pow(160).sub(1), 2 ** 48 - 1)
+    ).wait()
+
+    const sellRoute = new RouteCL([await loadCLPool(WBNB, USDT, TickSpacing.LOW)], USDT, BNB_NATIVE)
+    const amountIn = CurrencyAmount.fromRawAmount(USDT, '10000000000000000000') // 10 USDT
+    const quoted = await quoteCL(sellRoute as never, amountIn as never, TradeType.EXACT_INPUT)
+
+    const feeCollector = makeFeeCollector('native-fee-collector')
+    const trade = tradeOf(
+      [
+        {
+          route: sellRoute,
+          inputAmount: amountIn,
+          outputAmount: CurrencyAmount.fromRawAmount(BNB_NATIVE, quoted.toString())
+        }
+      ],
+      TradeType.EXACT_INPUT
+    )
+    const { calldata, value } = SwapRouter.swapCallParameters(trade, {
+      slippageTolerance: SLIPPAGE,
+      recipient: account,
+      deadline: deadline(),
+      fee: { fee: new Percent(25, 10_000), recipient: feeCollector }
+    })
+
+    const userBefore = await provider.getBalance(account)
+    const feeBefore = await provider.getBalance(feeCollector)
+    const receipt = await send(calldata, value)
+    const gasCost = receipt.gasUsed.mul(receipt.effectiveGasPrice)
+
+    const feeTaken = (await provider.getBalance(feeCollector)).sub(feeBefore)
+    const userReceived = (await provider.getBalance(account)).sub(userBefore).add(gasCost)
+
+    expect(feeTaken.toString()).toEqual(quoted.mul(25).div(10_000).toString())
+    expect(userReceived.add(feeTaken).toString()).toEqual(quoted.toString())
+    expect((await provider.getBalance(routerAddress)).toString()).toEqual('0')
   }, 180_000)
 
   it('honours an exact output trade and refunds the unspent native input', async () => {

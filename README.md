@@ -72,4 +72,5 @@ curl 'localhost:3000/quote?tokenIn=BNB&tokenOut=0x55d398326f99059fF7754852469990
 
 ## Docs
 
-- [Architecture and roadmap](docs/ARCHITECTURE.md)
+- [Architecture](docs/ARCHITECTURE.md) — why each package exists, what was forked from where, and how each layer is verified
+- [Deployment](docs/DEPLOYMENT.md) — deploying the Universal Router and wiring the address through the stack
