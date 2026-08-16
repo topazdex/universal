@@ -6,16 +6,20 @@ contracts plus the TypeScript stack needed to index Topaz liquidity and route in
 
 ## Packages
 
-| package | status | description |
-| --- | --- | --- |
-| [`@topaz/universal-router`](packages/universal-router) | ✅ working, fork tested against mainnet | Solidity Universal Router fork |
-| `@topaz/sdk-core` | planned | chain/token/currency primitives |
-| `@topaz/v2-sdk` | planned | Solidly pool math, volatile and stable |
-| `@topaz/v3-sdk` | planned | Slipstream CL pool math, tick spacing keyed |
-| `@topaz/router-sdk` | planned | mixed v2/CL route & trade types |
-| `@topaz/universal-router-sdk` | planned | trade → Universal Router calldata |
-| `@topaz/smart-order-router` | planned | pool indexing, route search, quoting |
-| `@topaz/routing-api` | planned | HTTP quote service over the SOR |
+| package | description |
+| --- | --- |
+| [`@topaz/universal-router`](packages/universal-router) | Solidity Universal Router fork, one entrypoint for swaps across both stacks |
+| [`@topaz/sdk-core`](packages/sdk-core) | BNB native currency, canonical tokens, chain constants |
+| [`@topaz/v2-sdk`](packages/v2-sdk) | Solidly pool math, volatile and stable |
+| [`@topaz/v3-sdk`](packages/v3-sdk) | Slipstream CL pool math, keyed by tick spacing |
+| [`@topaz/router-sdk`](packages/router-sdk) | mixed v2/CL routes and multi-route trades |
+| [`@topaz/universal-router-sdk`](packages/universal-router-sdk) | trade → Universal Router calldata |
+| [`@topaz/smart-order-router`](packages/smart-order-router) | pool indexing, route search, on-chain quoting, split selection |
+| [`@topaz/routing-api`](packages/routing-api) | HTTP quote service over the router |
+
+Every package is tested against live BNB Chain mainnet state — no mocked pools, and no hardcoded
+expected amounts: quotes are checked against Topaz's own deployed `Pool.getAmountOut`, `QuoterV2`
+and `MixedRouteQuoterV1`, and calldata is executed on a fork.
 
 ## Topaz on BNB Chain
 
@@ -50,7 +54,20 @@ The smart order router must emit this encoding when quoting mixed routes.
 ```bash
 cp .env.example .env        # set BSC_MAINNET_RPC to an archive endpoint
 yarn install
-yarn test:router            # 41 fork tests against live Topaz mainnet contracts
+yarn build
+
+yarn test:router            # 41 Solidity fork tests against live Topaz contracts
+yarn test                   # every package, including anvil-fork end to end tests
+```
+
+Foundry and `anvil` must be on `PATH`: the TypeScript end-to-end tests boot a fork and deploy the
+router onto it.
+
+Quote something:
+
+```bash
+UNIVERSAL_ROUTER_ADDRESS=0x… yarn workspace @topaz/routing-api start
+curl 'localhost:3000/quote?tokenIn=BNB&tokenOut=0x55d398326f99059fF775485246999027B3197955&amount=1000000000000000000'
 ```
 
 ## Docs
