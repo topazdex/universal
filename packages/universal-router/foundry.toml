@@ -34,6 +34,8 @@ runs = 1000
 bsc = "${BSC_MAINNET_RPC}"
 bsc_testnet = "${BSC_TESTNET_RPC}"
 
+# BscScan's standalone V1 API is retired; verification goes through the unified Etherscan V2
+# endpoint, where one key covers every supported chain
 [etherscan]
-bsc = { key = "${BSCSCAN_API_KEY}", url = "https://api.bscscan.com/api", chain = 56 }
-bsc_testnet = { key = "${BSCSCAN_API_KEY}", url = "https://api-testnet.bscscan.com/api", chain = 97 }
+bsc = { key = "${ETHERSCAN_API_KEY}", chain = 56 }
+bsc_testnet = { key = "${ETHERSCAN_API_KEY}", chain = 97 }

@@ -19,9 +19,13 @@ forge test --match-contract PoolAddressesForkTest -vv
 
 ```bash
 cd packages/universal-router
-PRIVATE_KEY=0x… forge script script/deployParameters/DeployBscMainnet.s.sol:DeployBscMainnet \
+PRIVATE_KEY=0x… ETHERSCAN_API_KEY=… forge script \
+  script/deployParameters/DeployBscMainnet.s.sol:DeployBscMainnet \
   --rpc-url bsc --broadcast --verify
 ```
+
+Verification goes through the unified Etherscan V2 endpoint — one key covers BSC — since BscScan's
+standalone V1 API is retired.
 
 The address is written to `deployment-addresses/bsc.json`.
 
