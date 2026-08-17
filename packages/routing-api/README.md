@@ -79,8 +79,9 @@ otherwise.
 
 ## Behaviour
 
-- **CORS** — allowlisted origins only, echoed rather than `*`. Defaults cover `localhost:3000`,
-  `app.topazdex.com` and the apex and www hosts; `CORS_ORIGINS` overrides.
+- **CORS** — allowlisted origins only, echoed rather than `*`. Defaults cover any loopback port and
+  the topazdex hosts; `CORS_ORIGINS` overrides, where the literal `localhost` means any loopback
+  port. Requested headers are reflected, since the API accepts no credentials.
 - **Caching** — identical quotes are reused for 1s, about one BNB Chain block, and identical requests
   in flight are coalesced. `Cache-Control: no-cache` or `skipCache=true` forces a recompute, skipping
   both the stored value and anything in flight. Responses carry `X-Cache: HIT|MISS` and `Age`.

@@ -12,13 +12,25 @@ import express, { Express, NextFunction, Request, Response } from 'express'
 import { ResponseCache } from './cache'
 import { BadRequestError, QuotePermit, QuoteResponse, QuoteService } from './quote'
 
-/** Browser origins allowed to call the API when nothing is configured */
+/**
+ * Browser origins allowed to call the API when nothing is configured.
+ *
+ * `localhost` covers any port and either loopback spelling, because dev servers vary — Vite is
+ * 5173, Next is 3000, and a browser treats `127.0.0.1` as a different origin from `localhost`.
+ * That is safe here: quotes are public read-only data and no credentials are ever accepted, so
+ * CORS is gating who may *read* a response their own machine could fetch with curl regardless.
+ */
 export const DEFAULT_CORS_ORIGINS = [
-  'http://localhost:3000',
+  'localhost',
   'https://app.topazdex.com',
   'https://topazdex.com',
   'https://www.topazdex.com'
 ]
+
+/** `localhost` in an allowlist means any port, over http, on either loopback spelling */
+function isLoopback(origin: string): boolean {
+  return /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/.test(origin)
+}
 
 export interface ServerConfig {
   /** One endpoint, or several to fail over between. Defaults to the public list. */
@@ -102,17 +114,30 @@ export function createApp(config: ServerConfig): Express {
  */
 function cors(origins: string[]) {
   const allowAll = origins.includes('*')
+  const allowLoopback = origins.includes('localhost')
   const allowed = new Set(origins.map(origin => origin.toLowerCase()))
 
   return (request: Request, response: Response, next: NextFunction): void => {
     const origin = request.headers.origin
+    const permitted =
+      Boolean(origin) &&
+      (allowAll || allowed.has((origin as string).toLowerCase()) || (allowLoopback && isLoopback(origin as string)))
 
-    if (origin && (allowAll || allowed.has(origin.toLowerCase()))) {
+    // set unconditionally: a shared cache must not serve a header-less response to an allowed
+    // origin, or vice versa
+    response.setHeader('Vary', 'Origin, Access-Control-Request-Headers')
+
+    if (origin && permitted) {
       response.setHeader('Access-Control-Allow-Origin', origin)
-      // the response varies by origin, so shared caches must key on it
-      response.setHeader('Vary', 'Origin')
       response.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-      response.setHeader('Access-Control-Allow-Headers', 'content-type')
+      // Reflect whatever the caller asked for. Only `content-type` was allowed before, which broke
+      // the documented `Cache-Control: no-cache` refresh: that header is not CORS-safelisted, so it
+      // preflights, and the browser blocked the response. Reflecting is safe because this API never
+      // accepts credentials — the origin allowlist above is what decides who may read a response.
+      response.setHeader(
+        'Access-Control-Allow-Headers',
+        request.headers['access-control-request-headers'] ?? 'content-type'
+      )
       response.setHeader('Access-Control-Max-Age', '86400')
     }
 
