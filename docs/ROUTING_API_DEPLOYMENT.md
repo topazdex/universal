@@ -8,7 +8,7 @@ whether it is fast or useless.
 
 | what | why |
 | --- | --- |
-| **A BNB Chain RPC** | A quote is ~100 `eth_call`s run 16 at a time. On a paid endpoint that is ~1.2s; on public endpoints ~5-6s. The service falls back to a built-in public list if you give it nothing, so it runs out of the box — but a paid endpoint is roughly 4x faster. |
+| **A BNB Chain RPC** | A quote is ~15-35 `eth_call`s run 16 at a time: **0.3-0.6s on a paid endpoint, 0.7-2.6s on the public list**. The service falls back to a built-in public list if you give it nothing, so public-only deployment is viable. |
 | Node 22 | matches CI and the Docker image |
 | The Universal Router address | already recorded in `@topazdex/universal-router-sdk`; only override it for a fork |
 
@@ -173,7 +173,7 @@ location /quote {
 ```
 
 `limit_req_zone $binary_remote_addr zone=quotes:10m rate=5r/s;` in the `http` block is a sane start.
-Without a limit, one client can saturate your RPC quota: each quote is ~100 `eth_call`s, and the
+Without a limit, one client can saturate your RPC quota: each quote is ~15-35 `eth_call`s, and the
 service issues 16 of them concurrently.
 
 ## 6. What to watch
@@ -181,14 +181,15 @@ service issues 16 of them concurrently.
 | signal | why it matters |
 | --- | --- |
 | p95 latency on `/quote` | dominated by RPC round trips; a jump means the RPC is degrading |
-| RPC requests per quote | ~100 for a default 5 BNB quote; a big rise means batches are being split, i.e. the node is rejecting them on gas |
+| RPC requests per quote | ~15-35 for a default quote; a big rise means batches are being split, i.e. the node is rejecting them on gas |
 | rate of `404 No route found` | a spike usually means the subgraph is stale or the RPC is failing calls |
 | `5xx` | RPC errors surface here |
 | RPC call volume | quote calls ≈ `routes × (100 / distributionPercent)`, batched 15 per `eth_call`, so this scales with traffic and with routing config |
 
 ## 7. Multicall batch size
 
-The defaults are measured, not guessed. A 5 BNB quote, batches run 16 at a time:
+The defaults are measured, not guessed. A 5 BNB quote before route screening was added, batches run
+16 at a time — screening cut the call counts 3-4x since, but the shape of the curve is unchanged:
 
 | batch | paid RPC | public RPC | `eth_call`s | batches split |
 | --- | --- | --- | --- | --- |
@@ -214,7 +215,41 @@ the ceiling that constrains quotes does not apply.
 Lower `MULTICALL_BATCH_SIZE` if you see splits in your logs; lower `MULTICALL_CONCURRENCY` if your
 provider rate limits you.
 
-## 8. Tuning cost against quality
+## 8. Hops, intermediaries, and what they cost
+
+`maxHops` defaults to **3**, over the intermediary tokens in `BASE_TOKENS`. Routes enumerated for
+BNB → TOPAZ, which sets how much quoting there is to do:
+
+| intermediaries | 2 hops | 3 hops | 4 hops |
+| --- | --- | --- | --- |
+| 6 (default) | 7 | 33 | 137 |
+| 8 | 7 | 43 | 219 |
+| 10 | 7 | 53 | 261 |
+| 12 | 7 | 53 | 261 |
+
+Hop depth dominates: each extra hop multiplies routes by roughly 4x. Each extra intermediary adds
+about 5 routes at 3 hops, and stops mattering once the token has no more pools to reach — the 10 and
+12 rows are identical because the last two tokens added no new pools.
+
+**Adding intermediaries is cheap now.** Routes are screened before the expensive pass (see below),
+so an extra intermediary costs about 2 quote calls per route it adds, not 20. Going from 6 to 10
+intermediaries on a BNB → TOPAZ quote is roughly 10 extra `eth_call`s.
+
+### Why routes are screened
+
+Quoting is the entire cost of routing: quote calls are `routes × (100 / distributionPercent)`, so 33
+routes at 5% granularity is 660 swap simulations. Instead, every route is priced at just its
+smallest and largest slice, and only the best survivors are priced across every slice. The screening
+quotes are reused, so survivors cost nothing extra.
+
+Measured on five pairs against a full sweep that prices every route: **identical quotes to the wei,
+3-4x fewer RPC calls.** The screen keeps a quarter of the routes found, between 8 and 32, which is
+why raising `maxHops` still converges on the same answer.
+
+If you raise `maxHops` past 4 or add many intermediaries, watch that `maxRoutesToQuote` grows with
+it — a screen that is too narrow for the search will quietly return a worse quote.
+
+## 9. Tuning cost against quality
 
 Per-request knobs, all query parameters:
 
@@ -225,11 +260,13 @@ Per-request knobs, all query parameters:
 &includeMixedRoutes=false
 ```
 
+`maxRoutesToQuote` is also accepted, for widening the screen when searching deeper.
+
 For a price display, `distributionPercent=25` is usually indistinguishable and much cheaper. For an
 actual swap, leave the defaults: on a 5 BNB → TOPAZ trade, the default 5% granularity beat the best
 single route by 1.4%, which dwarfs any gas saving from a simpler route.
 
-## 9. Known gaps before heavy production traffic
+## 10. Known gaps before heavy production traffic
 
 - **No pool-state cache.** Every quote re-reads pool state from the chain. A cache keyed by block
   number would cut RPC load dramatically for repeated pairs — the single biggest remaining win.

@@ -34,6 +34,8 @@ export interface FallbackRpcProviderOptions {
   maxAttempts?: number
   /** How long the agreed block height is reused */
   headCacheMs?: number
+  /** How long to wait for endpoints to report their height before proceeding without the stragglers */
+  headDeadlineMs?: number
 }
 
 interface Endpoint {
@@ -62,6 +64,7 @@ export class FallbackRpcProvider extends StaticJsonRpcProvider {
   private readonly cooldownMs: number
   private readonly maxAttempts: number
   private readonly headCacheMs: number
+  private readonly headDeadlineMs: number
   private head: { value: number; at: number } | undefined
 
   /**
@@ -83,6 +86,7 @@ export class FallbackRpcProvider extends StaticJsonRpcProvider {
     this.cooldownMs = options.cooldownMs ?? 30_000
     this.maxAttempts = options.maxAttempts ?? Math.min(4, endpoints.length)
     this.headCacheMs = options.headCacheMs ?? 2_000
+    this.headDeadlineMs = options.headDeadlineMs ?? 1_500
   }
 
   public get urls(): string[] {
@@ -108,35 +112,62 @@ export class FallbackRpcProvider extends StaticJsonRpcProvider {
     throw lastError
   }
 
-  /** The highest block every healthy endpoint can serve */
+  /** The highest block every endpoint that answered promptly can serve */
   public async getBlockNumber(): Promise<number> {
     const now = Date.now()
     if (this.head && now - this.head.at < this.headCacheMs) return this.head.value
 
-    const heads = await Promise.all(
-      this.endpoints.map(async endpoint => {
-        if (endpoint.skipUntil > now) return undefined
-        try {
-          const result = await endpoint.provider.send('eth_blockNumber', [])
-          return Number.parseInt(result as string, 16)
-        } catch {
-          endpoint.skipUntil = Date.now() + this.cooldownMs
-          return undefined
-        }
-      })
+    const asked = this.endpoints.filter(endpoint => endpoint.skipUntil <= now)
+    const pending = (asked.length > 0 ? asked : this.endpoints).map(endpoint => this.headOf(endpoint))
+
+    // an endpoint that cannot answer this within the deadline is no use for quoting either, so
+    // proceed with whoever replied rather than letting the slowest one gate the request
+    const known = (await Promise.all(pending.map(head => withDeadline(head, this.headDeadlineMs)))).filter(
+      (value): value is number => typeof value === 'number'
     )
 
-    const known = heads.filter((value): value is number => typeof value === 'number' && Number.isFinite(value))
-    if (known.length === 0) throw new Error('no healthy RPC endpoint could report a block number')
-
-    const value = Math.min(...known)
+    // nothing replied in time: fall back to the first endpoint that replies at all
+    const value = known.length > 0 ? Math.min(...known) : await firstResolved(pending)
     this.head = { value, at: Date.now() }
     return value
+  }
+
+  private async headOf(endpoint: Endpoint): Promise<number | undefined> {
+    try {
+      const result = await endpoint.provider.send('eth_blockNumber', [])
+      const head = Number.parseInt(result as string, 16)
+      return Number.isFinite(head) ? head : undefined
+    } catch {
+      endpoint.skipUntil = Date.now() + this.cooldownMs
+      return undefined
+    }
   }
 
   public async detectNetwork(): Promise<Network> {
     return this.network
   }
+}
+
+/** Resolves to undefined if the promise has not settled within the deadline */
+async function withDeadline<T>(promise: Promise<T>, ms: number): Promise<T | undefined> {
+  let timer: NodeJS.Timeout | undefined
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<undefined>(resolve => {
+        timer = setTimeout(() => resolve(undefined), ms)
+      })
+    ])
+  } finally {
+    if (timer) clearTimeout(timer)
+  }
+}
+
+async function firstResolved(pending: Promise<number | undefined>[]): Promise<number> {
+  const results = await Promise.all(pending)
+  const known = results.filter((value): value is number => typeof value === 'number')
+  if (known.length === 0) throw new Error('no healthy RPC endpoint could report a block number')
+  return Math.min(...known)
 }
 
 /**

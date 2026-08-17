@@ -64,6 +64,10 @@ export function computeAllRoutes(
 
   walk(tokenInWrapped)
 
+  // the cap below truncates, and DFS order is arbitrary, so rank first: short routes cost less gas
+  // and, at equal length, the deepest pools are the ones that can absorb size
+  paths.sort((a, b) => a.length - b.length || pathDepth(b) - pathDepth(a))
+
   const v2Routes: RouteV2<Currency, Currency>[] = []
   const clRoutes: RouteCL<Currency, Currency>[] = []
   const mixedRoutes: RouteMixed<Currency, Currency>[] = []
@@ -90,6 +94,20 @@ export function computeAllRoutes(
     clRoutes: clRoutes.slice(0, maxRoutes),
     mixedRoutes: mixedRoutes.slice(0, maxRoutes)
   }
+}
+
+/**
+ * How much size a path can absorb, taken as its thinnest pool: a route is only as deep as its
+ * narrowest hop. Units differ between the two stacks, so this ranks within a stack rather than
+ * across it, which is all the tie-break needs.
+ */
+function pathDepth(path: TPool[]): number {
+  return Math.min(...path.map(poolDepth))
+}
+
+function poolDepth(pool: TPool): number {
+  if (isCLPool(pool)) return Number(pool.liquidity.toString())
+  return Number(pool.reserve0.quotient.toString()) * Number(pool.reserve1.quotient.toString())
 }
 
 /** Pool addresses a route touches, used to keep split routes from re-using the same pool */

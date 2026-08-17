@@ -7,7 +7,7 @@ import { SwapOptions, SwapRouter, universalRouterAddress } from '@topazdex/unive
 import { TOPAZ_CHAIN_ID } from '../constants'
 import { MulticallProvider } from '../providers/multicall'
 import { PoolProvider } from '../providers/pool-provider'
-import { AmountToQuote, QuoteProvider, routeSupportsTradeType } from '../providers/quote-provider'
+import { AmountToQuote, QuoteProvider, RouteWithQuote, routeSupportsTradeType } from '../providers/quote-provider'
 import { CLSubgraphPool, SubgraphProvider, V2SubgraphPool } from '../providers/subgraph'
 import { BestSwapRoute, getBestSwapRoute, RouteWithValidQuote } from './best-swap-route'
 import { computeAllRoutes, routePoolAddresses } from './compute-routes'
@@ -20,6 +20,9 @@ export interface RoutingConfig {
   minSplits?: number
   maxHops?: number
   maxRoutesPerProtocol?: number
+  /** Routes carried from the cheap screen into the full split search. Defaults to a quarter of
+   * the routes found, between 8 and 32. */
+  maxRoutesToQuote?: number
   includeMixedRoutes?: boolean
   /** Pools pulled from each subgraph before filtering */
   subgraphPoolCount?: number
@@ -108,7 +111,7 @@ export class TopazRouter {
     if (routes.length === 0) return null
 
     const { percents, amounts } = splitAmount(amount, config.distributionPercent ?? 5)
-    const quotes = await this.quoteProvider.getQuotes(routes, amounts, tradeType, { blockTag: blockNumber })
+    const quotes = await this.quoteRoutes(routes, amounts, tradeType, blockNumber, config)
     if (quotes.length === 0) return null
 
     const gasPrice = await this.provider.getGasPrice()
@@ -152,6 +155,45 @@ export class TopazRouter {
       blockNumber,
       methodParameters
     }
+  }
+
+  /**
+   * Quotes routes in two passes, because quoting is the entire cost of routing and most routes
+   * never make the final answer.
+   *
+   * The screen prices every route at its smallest and largest slice — two calls each — and only the
+   * best survivors are priced across every slice. Both sizes matter: a deep pool wins the full
+   * amount while a thin one can still win a small slice, and ranking on either alone would drop the
+   * other. The screening quotes are reused, so the survivors cost nothing extra.
+   */
+  private async quoteRoutes(
+    routes: AnyRoute<Currency, Currency>[],
+    amounts: AmountToQuote[],
+    tradeType: TradeType,
+    blockNumber: number,
+    config: RoutingConfig
+  ): Promise<RouteWithQuote[]> {
+    // scales with how many routes exist: a wider search needs a wider screen, otherwise raising
+    // maxHops makes quotes worse rather than better
+    const maxRoutes = config.maxRoutesToQuote ?? Math.min(32, Math.max(8, Math.ceil(routes.length / 4)))
+    const options = { blockTag: blockNumber }
+
+    if (routes.length <= maxRoutes || amounts.length <= 2) {
+      return this.quoteProvider.getQuotes(routes, amounts, tradeType, options)
+    }
+
+    const screenAmounts = [amounts[0], amounts[amounts.length - 1]]
+    const screenQuotes = await this.quoteProvider.getQuotes(routes, screenAmounts, tradeType, options)
+    if (screenQuotes.length === 0) return []
+
+    const survivors = pickBestRoutes(screenQuotes, tradeType, maxRoutes)
+    const remaining = amounts.slice(1, amounts.length - 1)
+    if (remaining.length === 0) {
+      return screenQuotes.filter(quote => survivors.has(quote.route))
+    }
+
+    const rest = await this.quoteProvider.getQuotes(Array.from(survivors), remaining, tradeType, options)
+    return [...screenQuotes.filter(quote => survivors.has(quote.route)), ...rest]
   }
 
   private buildMethodParameters(
@@ -234,6 +276,48 @@ function allowedTokenSet(
   }
 
   return allowed
+}
+
+/**
+ * The routes worth pricing in full: the best at the largest slice and the best at the smallest,
+ * since those are won by different pools.
+ */
+function pickBestRoutes(
+  quotes: RouteWithQuote[],
+  tradeType: TradeType,
+  limit: number
+): Set<AnyRoute<Currency, Currency>> {
+  const better = (a: RouteWithQuote, b: RouteWithQuote): number => {
+    if (a.percent !== b.percent) return b.percent - a.percent
+    return tradeType === TradeType.EXACT_INPUT
+      ? b.quote.greaterThan(a.quote)
+        ? 1
+        : -1
+      : b.quote.lessThan(a.quote)
+        ? 1
+        : -1
+  }
+
+  const percents = [...new Set(quotes.map(quote => quote.percent))]
+  const survivors = new Set<AnyRoute<Currency, Currency>>()
+  const perPercent = Math.max(1, Math.ceil(limit / percents.length))
+
+  for (const percent of percents) {
+    const ranked = quotes.filter(quote => quote.percent === percent).sort(better)
+    for (const quote of ranked.slice(0, perPercent)) survivors.add(quote.route)
+  }
+
+  // top up from the largest slice if the two rankings overlapped
+  if (survivors.size < limit) {
+    const largest = Math.max(...percents)
+    const ranked = quotes.filter(quote => quote.percent === largest).sort(better)
+    for (const quote of ranked) {
+      if (survivors.size >= limit) break
+      survivors.add(quote.route)
+    }
+  }
+
+  return survivors
 }
 
 function splitAmount(
