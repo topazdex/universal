@@ -3,6 +3,14 @@
   "version": "0.1.0",
   "description": "HTTP quote service over the Topaz smart order router",
   "license": "GPL-3.0-or-later",
+  "author": "Topaz Dex",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/topazdex/universal.git",
+    "directory": "packages/routing-api"
+  },
+  "homepage": "https://github.com/topazdex/universal/tree/main/packages/routing-api#readme",
+  "bugs": "https://github.com/topazdex/universal/issues",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {

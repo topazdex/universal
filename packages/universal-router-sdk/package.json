@@ -3,6 +3,25 @@
   "version": "0.1.0",
   "description": "Encodes Topaz trades into Universal Router calldata",
   "license": "GPL-3.0-or-later",
+  "author": "Topaz Dex",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/topazdex/universal.git",
+    "directory": "packages/universal-router-sdk"
+  },
+  "homepage": "https://github.com/topazdex/universal/tree/main/packages/universal-router-sdk#readme",
+  "bugs": "https://github.com/topazdex/universal/issues",
+  "keywords": [
+    "topaz",
+    "topazdex",
+    "bnb-chain",
+    "bsc",
+    "defi",
+    "sdk",
+    "universal-router",
+    "calldata",
+    "permit2"
+  ],
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [

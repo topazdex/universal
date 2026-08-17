@@ -3,6 +3,22 @@
   "version": "0.1.0",
   "description": "Shared currency primitives for the Topaz stack: BNB native currency, canonical tokens, chain constants",
   "license": "GPL-3.0-or-later",
+  "author": "Topaz Dex",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/topazdex/universal.git",
+    "directory": "packages/sdk-core"
+  },
+  "homepage": "https://github.com/topazdex/universal/tree/main/packages/sdk-core#readme",
+  "bugs": "https://github.com/topazdex/universal/issues",
+  "keywords": [
+    "topaz",
+    "topazdex",
+    "bnb-chain",
+    "bsc",
+    "defi",
+    "sdk"
+  ],
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [

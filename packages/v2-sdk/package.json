@@ -3,6 +3,25 @@
   "version": "0.1.0",
   "description": "SDK for Topaz v2 (Solidly) volatile and stable pools",
   "license": "GPL-3.0-or-later",
+  "author": "Topaz Dex",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/topazdex/universal.git",
+    "directory": "packages/v2-sdk"
+  },
+  "homepage": "https://github.com/topazdex/universal/tree/main/packages/v2-sdk#readme",
+  "bugs": "https://github.com/topazdex/universal/issues",
+  "keywords": [
+    "topaz",
+    "topazdex",
+    "bnb-chain",
+    "bsc",
+    "defi",
+    "sdk",
+    "solidly",
+    "amm",
+    "stableswap"
+  ],
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [

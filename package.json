@@ -4,6 +4,13 @@
   "private": true,
   "description": "Topaz Dex routing monorepo: Universal Router, SDKs, smart order router and routing API",
   "license": "GPL-3.0-or-later",
+  "author": "Topaz Dex",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/topazdex/universal.git"
+  },
+  "homepage": "https://github.com/topazdex/universal#readme",
+  "bugs": "https://github.com/topazdex/universal/issues",
   "packageManager": "yarn@4.17.1",
   "workspaces": [
     "packages/*"

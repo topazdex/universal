@@ -3,6 +3,25 @@
   "version": "0.1.0",
   "description": "Indexes Topaz v2 and CL liquidity and finds the best route between them",
   "license": "GPL-3.0-or-later",
+  "author": "Topaz Dex",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/topazdex/universal.git",
+    "directory": "packages/smart-order-router"
+  },
+  "homepage": "https://github.com/topazdex/universal/tree/main/packages/smart-order-router#readme",
+  "bugs": "https://github.com/topazdex/universal/issues",
+  "keywords": [
+    "topaz",
+    "topazdex",
+    "bnb-chain",
+    "bsc",
+    "defi",
+    "smart-order-router",
+    "routing",
+    "aggregator",
+    "swap"
+  ],
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [

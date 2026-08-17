@@ -3,6 +3,24 @@
   "version": "0.1.0",
   "description": "SDK for Topaz CL (Slipstream concentrated liquidity) pools",
   "license": "MIT",
+  "author": "Topaz Dex",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/topazdex/universal.git",
+    "directory": "packages/v3-sdk"
+  },
+  "homepage": "https://github.com/topazdex/universal/tree/main/packages/v3-sdk#readme",
+  "bugs": "https://github.com/topazdex/universal/issues",
+  "keywords": [
+    "topaz",
+    "topazdex",
+    "bnb-chain",
+    "bsc",
+    "defi",
+    "sdk",
+    "slipstream",
+    "concentrated-liquidity"
+  ],
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [

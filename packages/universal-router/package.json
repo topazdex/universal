@@ -3,6 +3,24 @@
   "version": "0.1.0",
   "description": "Topaz Dex Universal Router: one entrypoint for swaps across Topaz v2 (Solidly) and Topaz CL (Slipstream) pools",
   "license": "GPL-3.0-or-later",
+  "author": "Topaz Dex",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/topazdex/universal.git",
+    "directory": "packages/universal-router"
+  },
+  "homepage": "https://github.com/topazdex/universal/tree/main/packages/universal-router#readme",
+  "bugs": "https://github.com/topazdex/universal/issues",
+  "keywords": [
+    "topaz",
+    "topazdex",
+    "bnb-chain",
+    "bsc",
+    "defi",
+    "universal-router",
+    "solidity",
+    "permit2"
+  ],
   "files": [
     "contracts",
     "out/UniversalRouter.sol/UniversalRouter.json",
