@@ -8,7 +8,7 @@ whether it is fast or useless.
 
 | what | why |
 | --- | --- |
-| **An unthrottled BNB Chain RPC** | A quote is ~50 `eth_call`s, run 8 at a time. A public dataseed node will rate-limit that into multi-second quotes. Use a paid Alchemy/QuickNode/Ankr endpoint, or your own node. |
+| **A BNB Chain RPC** | A quote is ~100 `eth_call`s run 16 at a time. On a paid endpoint that is ~1.2s; on public endpoints ~5-6s. The service falls back to a built-in public list if you give it nothing, so it runs out of the box — but a paid endpoint is roughly 4x faster. |
 | Node 22 | matches CI and the Docker image |
 | The Universal Router address | already recorded in `@topazdex/universal-router-sdk`; only override it for a fork |
 
@@ -18,14 +18,50 @@ Latency is dominated by RPC round trips, so co-locate the service with the RPC p
 
 | variable | required | default | notes |
 | --- | --- | --- | --- |
-| `BSC_MAINNET_RPC` | yes | — | archive access is *not* needed; throughput is |
+| `BSC_MAINNET_RPC` | no | public list | a single endpoint; archive access is *not* needed, throughput is |
+| `BSC_RPC_URLS` | no | public list | comma separated, failover in order; takes precedence over `BSC_MAINNET_RPC` |
 | `PORT` | no | `3000` | |
 | `CHAIN_ID` | no | `56` | |
 | `UNIVERSAL_ROUTER_ADDRESS` | no | recorded deployment | overrides the address used for calldata |
-| `MULTICALL_BATCH_SIZE` | no | `40` | quote calls per `eth_call`; lower it if the RPC rejects batches on gas |
-| `MULTICALL_CONCURRENCY` | no | `8` | `eth_call`s in flight; lower it if the RPC rate limits you |
+| `MULTICALL_BATCH_SIZE` | no | `15` | quote calls per `eth_call`; see the tuning section before changing it |
+| `MULTICALL_CONCURRENCY` | no | `16` | `eth_call`s in flight; lower it if the RPC rate limits you |
 
 No secrets beyond the RPC URL. If your RPC key is in the URL, treat the whole variable as a secret.
+
+### RPC failover
+
+Give it several endpoints and it fails over between them:
+
+```bash
+BSC_RPC_URLS="https://your-paid-endpoint,https://bsc-dataseed1.defibit.io,https://bsc-rpc.publicnode.com"
+```
+
+Requests go to the first healthy endpoint; one that fails at the transport level is skipped for 30
+seconds. Two details make this safe rather than merely redundant:
+
+- **A revert is not retried elsewhere.** It would come back identically from every endpoint, and
+  retrying it just delays the caller's own handling of it.
+- **The block height used is the lowest the endpoints agree on.** Quotes pin every call to one
+  block, and endpoints lag each other by a block or two, so pinning to the fastest endpoint's head
+  would make every call fail on the ones still catching up.
+
+The built-in public list, used when nothing is configured:
+
+| endpoint | notes |
+| --- | --- |
+| `bsc-dataseed1.defibit.io` | |
+| `bsc-dataseed2.bnbchain.org` | |
+| `bsc-rpc.publicnode.com` | |
+| `bsc-dataseed1.bnbchain.org` | |
+| `bsc-dataseed1.ninicoin.io` | |
+| `bsc.blockrazor.xyz` | |
+| `bsc-dataseed.bnbchain.org` | |
+| `bsc.drpc.org` | slowest of the set under load |
+
+Each was probed for the three things the router needs: the right chain, a `blockTag` a few blocks
+back, and a Multicall3 batch of at least 200 quote simulations. `llamarpc`, `1rpc.io`,
+`rpc.ankr.com`, `nodies`, `subquery` and `meowrpc` failed one of those and are deliberately
+excluded.
 
 ## 3. Run it
 
@@ -137,20 +173,48 @@ location /quote {
 ```
 
 `limit_req_zone $binary_remote_addr zone=quotes:10m rate=5r/s;` in the `http` block is a sane start.
-Without a limit, one client can saturate your RPC quota: each quote is ~50 `eth_call`s, and the
-service issues 8 of them concurrently.
+Without a limit, one client can saturate your RPC quota: each quote is ~100 `eth_call`s, and the
+service issues 16 of them concurrently.
 
 ## 6. What to watch
 
 | signal | why it matters |
 | --- | --- |
 | p95 latency on `/quote` | dominated by RPC round trips; a jump means the RPC is degrading |
-| RPC requests per quote | ~50 for a default 5 BNB quote; a big rise means batches are being split, i.e. the node is rejecting them on gas |
+| RPC requests per quote | ~100 for a default 5 BNB quote; a big rise means batches are being split, i.e. the node is rejecting them on gas |
 | rate of `404 No route found` | a spike usually means the subgraph is stale or the RPC is failing calls |
 | `5xx` | RPC errors surface here |
-| RPC call volume | quote calls ≈ `routes × (100 / distributionPercent)`, batched 40 per `eth_call`, so this scales with traffic and with routing config |
+| RPC call volume | quote calls ≈ `routes × (100 / distributionPercent)`, batched 15 per `eth_call`, so this scales with traffic and with routing config |
 
-## 7. Tuning cost against quality
+## 7. Multicall batch size
+
+The defaults are measured, not guessed. A 5 BNB quote, batches run 16 at a time:
+
+| batch | paid RPC | public RPC | `eth_call`s | batches split |
+| --- | --- | --- | --- | --- |
+| 5 | 1.60s | — | 291 | 0 |
+| 10 | 1.60s | 7.8s | 146 | 0 |
+| **15** | **1.25s** | **5.4s** | **98** | **0** |
+| 20 | 2.09s | — | 81 | 4 |
+| 25 | — | 8.2s | 67 | 4 |
+| 40 | 3.70s | 10.8s | 49 | 6 |
+| 200 | 6.36s | — | 43 | 17 |
+
+Bigger batches mean fewer requests, and are *slower*. Past ~15 quote simulations a batch overruns
+the node's `eth_call` gas ceiling; it is then halved and retried, so it costs two round trips and a
+wasted simulation instead of one. 15 was the largest split-free size on both a paid endpoint and a
+public dataseed node, and it was fastest on both.
+
+Concurrency, at batch 15 on the paid endpoint: 8 → 2.12s, 16 → 1.44s, 24 → 1.34s, 32 → 1.14s.
+Returns flatten after 16, and higher values burn provider quota in bursts, so 16 is the default.
+
+Pool state reads batch at 60, separately: they are plain view calls costing a few thousand gas, so
+the ceiling that constrains quotes does not apply.
+
+Lower `MULTICALL_BATCH_SIZE` if you see splits in your logs; lower `MULTICALL_CONCURRENCY` if your
+provider rate limits you.
+
+## 8. Tuning cost against quality
 
 Per-request knobs, all query parameters:
 
@@ -165,7 +229,7 @@ For a price display, `distributionPercent=25` is usually indistinguishable and m
 actual swap, leave the defaults: on a 5 BNB → TOPAZ trade, the default 5% granularity beat the best
 single route by 1.4%, which dwarfs any gas saving from a simpler route.
 
-## 8. Known gaps before heavy production traffic
+## 9. Known gaps before heavy production traffic
 
 - **No pool-state cache.** Every quote re-reads pool state from the chain. A cache keyed by block
   number would cut RPC load dramatically for repeated pairs — the single biggest remaining win.

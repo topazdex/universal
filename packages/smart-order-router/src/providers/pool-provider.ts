@@ -3,7 +3,7 @@ import { CurrencyAmount, Token } from '@topazdex/sdk-core'
 import { Pool as V2Pool } from '@topazdex/v2-sdk'
 import { Pool as CLPool } from '@topazdex/v3-sdk'
 
-import { CL_FACTORY_ADDRESS, POOL_FACTORY_ADDRESS } from '../constants'
+import { CL_FACTORY_ADDRESS, POOL_FACTORY_ADDRESS, POOL_STATE_BATCH_SIZE } from '../constants'
 import { MulticallProvider } from './multicall'
 import { CLSubgraphPool, V2SubgraphPool } from './subgraph'
 
@@ -53,7 +53,10 @@ export class PoolProvider {
       }
     ])
 
-    const results = await this.multicall.call(calls, { blockTag: options.blockTag })
+    const results = await this.multicall.call(calls, {
+      blockTag: options.blockTag,
+      batchSize: POOL_STATE_BATCH_SIZE
+    })
 
     const built: V2Pool[] = []
     for (const [i, pool] of pools.entries()) {
@@ -94,7 +97,10 @@ export class PoolProvider {
       }
     ])
 
-    const results = await this.multicall.call(calls, { blockTag: options.blockTag })
+    const results = await this.multicall.call(calls, {
+      blockTag: options.blockTag,
+      batchSize: POOL_STATE_BATCH_SIZE
+    })
 
     const built: CLPool[] = []
     for (const [i, pool] of pools.entries()) {

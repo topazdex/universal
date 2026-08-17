@@ -1,44 +1,49 @@
-# Fly.io config for the Topaz routing API.
-#   fly launch --no-deploy --copy-config     (first time, to create the app)
-#   fly secrets set BSC_MAINNET_RPC="https://…"
-#   fly deploy
+# fly.toml app configuration file generated for topaz-routing-api on 2026-08-16T18:19:21-07:00
 #
-# Run from the repo root: the Dockerfile needs the whole workspace as build context.
-app = "topaz-routing-api"
-primary_region = "sin"  # put this near your RPC provider, not near your users: latency is RPC bound
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+# Deploy notes and the reasoning behind these values: docs/ROUTING_API_DEPLOYMENT.md
+#
+#   fly secrets set BSC_MAINNET_RPC="https://…"                     # one endpoint
+#   fly secrets set BSC_RPC_URLS="https://paid…,https://public…"     # or several, with failover
+#   fly deploy                                                      # run from the repo root
+#
+# With neither secret set the service falls back to public endpoints and still works, several
+# times slower.
+
+app = 'topaz-routing-api'
+# a quote is ~100 round trips to the RPC and one to the client, so this wants to sit near the RPC
+# provider rather than near users
+primary_region = 'ord'
 
 [build]
-  dockerfile = "packages/routing-api/Dockerfile"
+  dockerfile = 'packages/routing-api/Dockerfile'
 
 [env]
-  PORT = "3000"
-  CHAIN_ID = "56"
-  NODE_ENV = "production"
+  CHAIN_ID = '56'
+  NODE_ENV = 'production'
+  PORT = '3000'
 
 [http_service]
   internal_port = 3000
   force_https = true
+  auto_stop_machines = 'off'
   auto_start_machines = true
-  # quotes are latency sensitive and a cold start costs seconds, so keep one machine warm
-  auto_stop_machines = "off"
   min_machines_running = 1
-  processes = ["app"]
+  processes = ['app']
 
-  # a quote holds a request open for seconds while it waits on the RPC, so a machine saturates at a
-  # low request count; these limits make Fly spread load rather than queue it
   [http_service.concurrency]
-    type = "requests"
-    soft_limit = 15
+    type = 'requests'
     hard_limit = 30
+    soft_limit = 15
 
   [[http_service.checks]]
-    grace_period = "15s"
-    interval = "30s"
-    method = "GET"
-    path = "/health"
-    protocol = "http"
-    timeout = "5s"
+    interval = '30s'
+    timeout = '5s'
+    grace_period = '15s'
+    method = 'GET'
+    path = '/health'
+    protocol = 'http'
 
 [[vm]]
-  size = "shared-cpu-2x"
-  memory = "1gb"
+  size = 'shared-cpu-2x'
+  memory = '1gb'

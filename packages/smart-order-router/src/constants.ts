@@ -24,3 +24,21 @@ export const V2_HOP_GAS = 125_000
 export const CL_HOP_GAS = 145_000
 /** Each initialised tick a CL swap crosses costs roughly this much extra */
 export const CL_TICK_CROSS_GAS = 30_000
+
+/**
+ * Quote simulations per `eth_call`, and how many of those calls run at once.
+ *
+ * Measured against both a paid endpoint and a public dataseed node with a 5 BNB quote. Larger
+ * batches mean fewer requests but they overrun the node's `eth_call` gas ceiling, and every batch
+ * that overruns is halved and retried — wasted round trips that cost far more than the requests
+ * they saved. 15 was the largest size that never split on either endpoint, and it was also the
+ * fastest: 1.2s vs 3.7s at 40, and 6.4s at 200.
+ */
+export const QUOTE_BATCH_SIZE = 15
+export const MULTICALL_CONCURRENCY = 16
+
+/**
+ * Pool state reads are plain view calls costing a few thousand gas each, nowhere near the ceiling
+ * that constrains quotes, so they batch far more aggressively.
+ */
+export const POOL_STATE_BATCH_SIZE = 60

@@ -2,7 +2,7 @@ import { Interface } from '@ethersproject/abi'
 import { BigNumber } from '@ethersproject/bignumber'
 import { BaseProvider } from '@ethersproject/providers'
 
-import { MULTICALL3_ADDRESS } from '../constants'
+import { MULTICALL3_ADDRESS, MULTICALL_CONCURRENCY, QUOTE_BATCH_SIZE } from '../constants'
 
 const MULTICALL3_ABI = [
   'function aggregate3((address target, bool allowFailure, bytes callData)[] calls) payable returns ((bool success, bytes returnData)[] returnData)'
@@ -53,8 +53,8 @@ export class MulticallProvider {
     // an explicitly undefined per-call option must not clobber a configured default
     const defined = Object.fromEntries(Object.entries(callOptions).filter(([, value]) => value !== undefined))
     const options: MulticallOptions = { ...this.defaults, ...defined }
-    const batchSize = options.batchSize ?? 40
-    const concurrency = options.concurrency ?? 8
+    const batchSize = options.batchSize ?? QUOTE_BATCH_SIZE
+    const concurrency = options.concurrency ?? MULTICALL_CONCURRENCY
 
     const batches: Call[][] = []
     for (let i = 0; i < calls.length; i += batchSize) {

@@ -1,12 +1,20 @@
-import { StaticJsonRpcProvider } from '@ethersproject/providers'
+import { BaseProvider, StaticJsonRpcProvider } from '@ethersproject/providers'
 import { TradeType } from '@topazdex/sdk-core'
-import { MulticallProvider, TokenProvider, TopazRouter } from '@topazdex/smart-order-router'
+import {
+  FallbackRpcProvider,
+  MulticallProvider,
+  PUBLIC_BSC_RPC_URLS,
+  TokenProvider,
+  TopazRouter
+} from '@topazdex/smart-order-router'
 import express, { Express, Request, Response } from 'express'
 
 import { BadRequestError, QuoteService } from './quote'
 
 export interface ServerConfig {
-  rpcUrl: string
+  /** One endpoint, or several to fail over between. Defaults to the public list. */
+  rpcUrl?: string
+  rpcUrls?: string[]
   chainId?: number
   universalRouterAddress?: string
   /** Quote calls per eth_call. Lower it if the RPC rejects batches on gas. */
@@ -17,9 +25,7 @@ export interface ServerConfig {
 
 export function createApp(config: ServerConfig): Express {
   const chainId = config.chainId ?? 56
-  // StaticJsonRpcProvider, not JsonRpcProvider: the latter issues an eth_chainId before every
-  // single request, which doubles the request count for a quote that is otherwise all multicalls
-  const provider = new StaticJsonRpcProvider(config.rpcUrl, chainId)
+  const provider = buildProvider(config, chainId)
   const multicall = new MulticallProvider(provider, {
     batchSize: config.multicallBatchSize,
     concurrency: config.multicallConcurrency
@@ -56,6 +62,17 @@ export function createApp(config: ServerConfig): Express {
   })
 
   return app
+}
+
+/**
+ * A single endpoint stays a plain provider; several become a failover pool. Either way it is
+ * Static, not JsonRpcProvider: the latter issues an eth_chainId before every single request,
+ * which doubles the request count for a quote that is otherwise all multicalls.
+ */
+function buildProvider(config: ServerConfig, chainId: number): BaseProvider {
+  const urls = config.rpcUrls?.length ? config.rpcUrls : config.rpcUrl ? [config.rpcUrl] : PUBLIC_BSC_RPC_URLS
+  if (urls.length === 1) return new StaticJsonRpcProvider({ url: urls[0], timeout: 20_000 }, chainId)
+  return new FallbackRpcProvider(urls, { chainId })
 }
 
 interface QueryLike {
@@ -105,12 +122,23 @@ function requireString(query: QueryLike, key: string): string {
 }
 
 if (require.main === module) {
-  const rpcUrl = process.env.BSC_MAINNET_RPC
-  if (!rpcUrl) throw new Error('BSC_MAINNET_RPC is required')
+  // BSC_MAINNET_RPC for one endpoint, BSC_RPC_URLS for a comma separated failover list
+  const rpcUrls = (process.env.BSC_RPC_URLS ?? process.env.BSC_MAINNET_RPC ?? '')
+    .split(',')
+    .map(url => url.trim())
+    .filter(Boolean)
+
+  if (rpcUrls.length === 0) {
+    // eslint-disable-next-line no-console
+    console.warn(
+      `No BSC_MAINNET_RPC or BSC_RPC_URLS set, falling back to ${PUBLIC_BSC_RPC_URLS.length} public endpoints. ` +
+        'Expect quotes several times slower than on a paid endpoint.'
+    )
+  }
 
   const port = Number(process.env.PORT ?? 3000)
   const app = createApp({
-    rpcUrl,
+    rpcUrls,
     chainId: process.env.CHAIN_ID ? Number(process.env.CHAIN_ID) : undefined,
     universalRouterAddress: process.env.UNIVERSAL_ROUTER_ADDRESS,
     multicallBatchSize: process.env.MULTICALL_BATCH_SIZE ? Number(process.env.MULTICALL_BATCH_SIZE) : undefined,

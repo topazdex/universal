@@ -55,6 +55,23 @@ route.quoteGasAdjusted       // the number to compare routes on
 route.methodParameters       // { calldata, value, to }
 ```
 
+## RPC
+
+Quoting is the whole cost of routing, so the provider matters. `FallbackRpcProvider` sends each
+request to the first healthy endpoint, skips one that fails at the transport level for 30 seconds,
+and reports the lowest block height its endpoints agree on — quotes pin every call to one block, and
+endpoints lag each other, so pinning to the fastest one's head would break calls on the rest. A
+revert is never retried elsewhere: it would come back identically everywhere.
+
+```ts
+import { FallbackRpcProvider, PUBLIC_BSC_RPC_URLS } from '@topazdex/smart-order-router'
+
+const provider = new FallbackRpcProvider([process.env.PAID_RPC, ...PUBLIC_BSC_RPC_URLS])
+```
+
+`PUBLIC_BSC_RPC_URLS` is a probed list of public endpoints that serve historical block tags and
+accept large Multicall3 batches. A paid endpoint is roughly 4x faster end to end.
+
 ## Tuning
 
 | option | default | effect |
@@ -68,6 +85,12 @@ route.methodParameters       // { calldata, value, to }
 
 Quote count is `routes × (100 / distributionPercent)`, and each quote simulates a real swap, so
 these two knobs dominate latency. Raise `distributionPercent` to 25 for a fast approximate quote.
+
+Those quotes are batched through Multicall3, 15 per `eth_call` with 16 calls in flight. Both numbers
+are measured rather than assumed: past ~15 simulations a batch overruns the node's `eth_call` gas
+ceiling and has to be halved and retried, which costs more than the request it saved. See the
+[routing API deployment guide](../../docs/ROUTING_API_DEPLOYMENT.md#7-multicall-batch-size) for the
+full sweep.
 
 ## Tests
 

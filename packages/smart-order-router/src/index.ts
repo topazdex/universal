@@ -1,4 +1,5 @@
 export * from './constants'
+export * from './providers/fallback-provider'
 export * from './providers/multicall'
 export * from './providers/pool-provider'
 export * from './providers/quote-provider'
