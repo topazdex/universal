@@ -7,9 +7,17 @@ import {
   TokenProvider,
   TopazRouter
 } from '@topazdex/smart-order-router'
-import express, { Express, Request, Response } from 'express'
+import express, { Express, NextFunction, Request, Response } from 'express'
 
 import { BadRequestError, QuotePermit, QuoteService } from './quote'
+
+/** Browser origins allowed to call the API when nothing is configured */
+export const DEFAULT_CORS_ORIGINS = [
+  'http://localhost:3000',
+  'https://app.topazdex.com',
+  'https://topazdex.com',
+  'https://www.topazdex.com'
+]
 
 export interface ServerConfig {
   /** One endpoint, or several to fail over between. Defaults to the public list. */
@@ -23,6 +31,8 @@ export interface ServerConfig {
   multicallConcurrency?: number
   /** Token addresses the router may hop through, overriding the defaults */
   baseTokens?: string[]
+  /** Browser origins allowed to call this API. `['*']` allows any. */
+  corsOrigins?: string[]
 }
 
 export function createApp(config: ServerConfig): Express {
@@ -43,6 +53,7 @@ export function createApp(config: ServerConfig): Express {
 
   const app = express()
   app.use(express.json())
+  app.use(cors(config.corsOrigins ?? DEFAULT_CORS_ORIGINS))
 
   app.get('/health', (_request: Request, response: Response) => {
     response.json({ status: 'ok', chainId })
@@ -73,6 +84,37 @@ export function createApp(config: ServerConfig): Express {
   }
 
   return app
+}
+
+/**
+ * Quotes are public read-only data, so this is an allowlist rather than a credentialed policy: the
+ * matching origin is echoed back, never a wildcard alongside credentials.
+ *
+ * A `POST` carrying `content-type: application/json` is not a simple request, so browsers send a
+ * preflight first — it has to be answered even though the endpoint itself is harmless.
+ */
+function cors(origins: string[]) {
+  const allowAll = origins.includes('*')
+  const allowed = new Set(origins.map(origin => origin.toLowerCase()))
+
+  return (request: Request, response: Response, next: NextFunction): void => {
+    const origin = request.headers.origin
+
+    if (origin && (allowAll || allowed.has(origin.toLowerCase()))) {
+      response.setHeader('Access-Control-Allow-Origin', origin)
+      // the response varies by origin, so shared caches must key on it
+      response.setHeader('Vary', 'Origin')
+      response.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+      response.setHeader('Access-Control-Allow-Headers', 'content-type')
+      response.setHeader('Access-Control-Max-Age', '86400')
+    }
+
+    if (request.method === 'OPTIONS') {
+      response.sendStatus(204)
+      return
+    }
+    next()
+  }
 }
 
 /**
@@ -177,7 +219,12 @@ if (require.main === module) {
     baseTokens: (process.env.ROUTING_BASE_TOKENS ?? '')
       .split(',')
       .map(address => address.trim())
-      .filter(Boolean)
+      .filter(Boolean),
+    corsOrigins: process.env.CORS_ORIGINS
+      ? process.env.CORS_ORIGINS.split(',')
+          .map(origin => origin.trim())
+          .filter(Boolean)
+      : undefined
   })
 
   app.listen(port, () => {
