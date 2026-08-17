@@ -1,0 +1,62 @@
+name: Bug report
+description: Something in the router, an SDK or the quote service does not do what it says
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Found a security vulnerability? Do not file it here — use
+        [private reporting](https://github.com/topazdex/universal/security/advisories/new) instead.
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options:
+        - "@topazdex/universal-router (Solidity)"
+        - "@topazdex/sdk-core"
+        - "@topazdex/v2-sdk"
+        - "@topazdex/v3-sdk"
+        - "@topazdex/router-sdk"
+        - "@topazdex/universal-router-sdk"
+        - "@topazdex/smart-order-router"
+        - "@topazdex/routing-api / quote.topazdex.com"
+        - Not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you expected, and what you got instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: How to reproduce
+      description: |
+        A failing test, a script, or a `curl`. Anything touching a quote is only reproducible when
+        pinned to a block — include the block number, the pair, the amount in its smallest unit, and
+        the trade type.
+      placeholder: |
+        curl 'https://quote.topazdex.com/quote?tokenIn=BNB&tokenOut=0x55d3…&amount=1000000000000000000'
+        block 116350000, exactIn, expected ~606 USDT, got …
+      render: shell
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Package version, or the deployed router / API you hit.
+      placeholder: "@topazdex/smart-order-router 0.1.0"
+
+  - type: textarea
+    id: env
+    attributes:
+      label: Environment
+      description: Node version, OS, and which RPC provider — RPC behaviour explains a surprising number of these.

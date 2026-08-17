@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/topazdex/universal/security/advisories/new
+    about: Report privately. Do not open an issue.
+  - name: Integrating a frontend
+    url: https://github.com/topazdex/universal/blob/main/docs/FRONTEND_INTEGRATION.md
+    about: Quoting, approvals, Permit2 and execution, end to end.
+  - name: Running the quote service yourself
+    url: https://github.com/topazdex/universal/blob/main/docs/ROUTING_API_DEPLOYMENT.md
+    about: Configuration, RPC failover, tuning and what to watch.

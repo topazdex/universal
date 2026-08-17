@@ -1,0 +1,57 @@
+name: Bad quote
+description: The router returned a worse price than a route you know exists
+labels: [quote-quality]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        These are the most valuable reports this project gets, and also the easiest to get wrong —
+        two quotes taken at different blocks are not comparable. Pin the block.
+
+  - type: input
+    id: pair
+    attributes:
+      label: Pair and size
+      placeholder: "1 BNB -> TOPAZ, exactIn, amount 1000000000000000000"
+    validations:
+      required: true
+
+  - type: input
+    id: block
+    attributes:
+      label: Block number
+      description: From the `blockNumber` field of the quote response.
+    validations:
+      required: true
+
+  - type: textarea
+    id: got
+    attributes:
+      label: What the router returned
+      description: The quote, and the routes it split across (`routes[]` from the response).
+      render: json
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: The better route
+      description: |
+        The path you believe is better, and what it is worth at that same block. A quote from
+        Topaz's own `QuoterV2` or `MixedRouteQuoterV1` at that block is the strongest form of this.
+    validations:
+      required: true
+
+  - type: input
+    id: delta
+    attributes:
+      label: Difference
+      description: In bips, if you have it.
+      placeholder: "-32 bips"
+
+  - type: textarea
+    id: config
+    attributes:
+      label: Routing parameters
+      description: Any non-default `maxHops`, `maxSplits`, `distributionPercent`, `includeMixedRoutes`.
