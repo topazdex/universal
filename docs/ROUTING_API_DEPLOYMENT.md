@@ -305,6 +305,23 @@ The limits worth knowing:
 so an extra intermediary costs about 2 quote calls per route it adds, not 20. Going from 6 to 10
 intermediaries on a BNB → TOPAZ quote is roughly 10 extra `eth_call`s.
 
+### Why routes are ranked before they are quoted
+
+Nearly all of a quote's wall clock is on-chain quoting — measured at **86%**, split between the
+screen and the sweep, against 11% for reading pool state. So the lever is quoting fewer routes.
+
+Candidates are first ranked locally, from pool state already in memory, and only the best
+`maxRoutesToScreen` (20) reach the chain. v2 legs use the real Solidly maths; CL legs use the pool's
+virtual reserves — `L/√P` and `L·√P` — which price impact correctly while a swap stays in the
+current tick range.
+
+Spot price alone was not enough: a first attempt ranked on spot and lost 25 bips on a 5 BNB → TOPAZ
+quote, because it scored a thin pool identically to a deep one. With impact included, ten pairs
+including spoke-to-spoke ones returned **identical quotes** while calls fell from 34 to 16 and a
+1 BNB → TOPAZ quote went from 1782ms to 490ms.
+
+The estimate ranks, it never answers: everything it keeps is still priced on chain.
+
 ### Why routes are screened
 
 Quoting is the entire cost of routing: quote calls are `routes × (100 / distributionPercent)`, so 33

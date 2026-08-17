@@ -11,6 +11,7 @@ import { AmountToQuote, QuoteProvider, RouteWithQuote, routeSupportsTradeType } 
 import { CLSubgraphPool, SubgraphProvider, V2SubgraphPool } from '../providers/subgraph'
 import { BestSwapRoute, getBestSwapRoute, RouteWithValidQuote } from './best-swap-route'
 import { computeAllRoutes, routePoolAddresses } from './compute-routes'
+import { prerankRoutes } from './estimate-route'
 import { GasModel } from './gas-model'
 
 export interface RoutingConfig {
@@ -23,6 +24,11 @@ export interface RoutingConfig {
   /** Routes carried from the cheap screen into the full split search. Defaults to a quarter of
    * the routes found, between 8 and 32. */
   maxRoutesToQuote?: number
+  /**
+   * Routes sent to the on-chain screen. Candidates beyond this are ranked out locally, from pool
+   * state already in memory, since on-chain quoting is where nearly all of a quote's time goes.
+   */
+  maxRoutesToScreen?: number
   includeMixedRoutes?: boolean
   /** Pools pulled from each subgraph before filtering */
   subgraphPoolCount?: number
@@ -118,8 +124,14 @@ export class TopazRouter {
     )
     if (routes.length === 0) return null
 
+    // narrow locally before spending round trips: everything kept is still priced on chain
+    const screenable =
+      tradeType === TradeType.EXACT_INPUT
+        ? prerankRoutes(routes, amount, config.maxRoutesToScreen ?? 20)
+        : routes
+
     const { percents, amounts } = splitAmount(amount, config.distributionPercent ?? 5)
-    const quotes = await this.quoteRoutes(routes, amounts, tradeType, blockNumber, config)
+    const quotes = await this.quoteRoutes(screenable, amounts, tradeType, blockNumber, config)
     if (quotes.length === 0) return null
 
     const gasPrice = await this.provider.getGasPrice()
