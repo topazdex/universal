@@ -79,6 +79,7 @@ infrastructure the smart order router uses.
 | `TopazCL.t.sol` | CL exact in & out, multi-hop, BNB in/out, callback authentication, vs `QuoterV2` |
 | `TopazMixed.t.sol` | CL↔v2 routes and split routes, vs `MixedRouteQuoterV1` |
 | `UniversalRouter.t.sol` | deadlines, command validation, revert flags, sub-plans |
+| `DeployedRouter.t.sol` | the live deployment's bytecode against this source, byte for byte |
 
 ```bash
 cp ../../.env.example ../../.env   # set BSC_MAINNET_RPC
@@ -86,6 +87,13 @@ forge test
 ```
 
 `FORK_BLOCK` pins the fork for reproducibility; unset it to run against the chain tip.
+
+Set `DEPLOYED_UNIVERSAL_ROUTER` to run the whole suite against the live contract instead of one
+deployed into the fork:
+
+```bash
+DEPLOYED_UNIVERSAL_ROUTER=0x691e6171e0a434FfE5C9f1759621D05b9efcF6A6 forge test
+```
 
 ## Deploy
 

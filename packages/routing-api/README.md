@@ -77,6 +77,17 @@ otherwise.
 { "status": "ok", "chainId": 56 }
 ```
 
+## Behaviour
+
+- **CORS** — allowlisted origins only, echoed rather than `*`. Defaults cover `localhost:3000`,
+  `app.topazdex.com` and the apex and www hosts; `CORS_ORIGINS` overrides.
+- **Caching** — identical quotes are reused for 1s, about one BNB Chain block, and identical requests
+  in flight are coalesced. `Cache-Control: no-cache` or `skipCache=true` forces a recompute, skipping
+  both the stored value and anything in flight. Responses carry `X-Cache: HIT|MISS` and `Age`.
+  Requests carrying a Permit2 signature and failed computations are never cached.
+- **RPC** — several endpoints with failover, defaulting to a probed public list, so the service runs
+  with no RPC configured.
+
 ## Deploying
 
 See [docs/ROUTING_API_DEPLOYMENT.md](../../docs/ROUTING_API_DEPLOYMENT.md). There is a Dockerfile in

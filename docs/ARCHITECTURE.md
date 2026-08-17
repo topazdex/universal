@@ -69,23 +69,39 @@ router, and each run but the first spends the router's balance.
 
 | layer | how it is proven |
 | --- | --- |
-| `universal-router` | 41 Solidity fork tests. Amounts come from `Pool.getAmountOut`, `QuoterV2` and `MixedRouteQuoterV1` on live state, never hardcoded. |
+| `universal-router` | 43 Solidity fork tests. Amounts come from `Pool.getAmountOut`, `QuoterV2` and `MixedRouteQuoterV1` on live state, never hardcoded. One test compares the live deployment's bytecode with this source. |
 | `v2-sdk` | SDK quote must equal `Pool.getAmountOut` to the wei, both curves, both directions. |
 | `v3-sdk` | derived addresses equal `CLFactory.getPool`; quoter calldata runs against the live `QuoterV2`. |
 | `router-sdk` | mixed-route quotes from the live `MixedRouteQuoterV1` must equal the same route priced leg by leg. |
 | `universal-router-sdk` | the router is deployed onto an anvil fork and SDK calldata is executed against live pools: CL, v2, mixed, split, fees, Permit2, native in/out, exact output. |
-| `smart-order-router` | routes real sizes against live liquidity, then executes its own calldata and checks the received amount lands within a basis point of the quote. |
-| `routing-api` | the service runs against a fork and the calldata it returns is executed. |
+| `smart-order-router` | routes real sizes against live liquidity, then executes its own calldata and checks the received amount lands within a basis point of the quote. Local route estimates are unit tested against the maths they approximate. |
+| `routing-api` | the service runs against a fork and the calldata it returns is executed, including a swap pulled entirely by a signed Permit2 allowance. |
+
+Beyond the suites, changes to the routing path are validated by quoting a spread of pairs and sizes
+against a router configured to price *every* route on chain, expecting zero difference. That check
+caught a 50 bips regression that six spot checks had missed; see `CLAUDE.md`.
+
+## How a quote spends its time
+
+Measured stage by stage on a warm process: **86% is on-chain quoting**, 11% is reading pool state,
+and everything else — route enumeration, the split search, encoding — is noise. Every optimisation
+that has mattered came from quoting fewer routes, never from moving bytes faster:
+
+| change | effect on a 1 BNB → TOPAZ quote |
+| --- | --- |
+| `StaticJsonRpcProvider` instead of `JsonRpcProvider` | dropped 140 redundant `eth_chainId` calls, half the traffic |
+| multicall batch 15, 16 in flight | measured optimum; bigger batches overrun the node's gas ceiling, get halved, and cost more |
+| screen routes at two sizes before the full sweep | 3-4x fewer calls, identical quotes |
+| rank candidates locally before quoting | 34 calls → 16, 1782ms → 490ms, identical quotes |
+| 1s response cache with in-flight coalescing | repeat quotes ~0.2s; ten concurrent become one computation |
 
 ## Not built yet
 
-- **Deployment.** The router has a deploy script (`script/deployParameters/DeployBscMainnet.s.sol`)
-  that cross-checks the clone implementations against the live factories before broadcasting, but it
-  has not been run against mainnet. Once it is, record the address in
-  `UNIVERSAL_ROUTER_ADDRESSES` in `@topazdex/universal-router-sdk`.
-- **Caching and rate limiting in the API.** Every quote re-reads pool state. A pool-state cache
-  keyed by block, and a subgraph refresh loop, are the obvious next step for production traffic.
+- **Local CL simulation.** The largest remaining win. `v3-sdk` already ships the swap maths; the
+  missing input is each pool's initialised ticks. Cached per block, quoting becomes CPU-bound and
+  sub-100ms is plausible. Prove wei-exactness against `QuoterV2` before letting it decide anything.
+- **Pool-state cache.** Identical quotes hit the response cache, but a quote differing only in
+  amount re-reads every pool.
+- **Rate limiting.** The public endpoint has none; see `docs/ROUTING_API_DEPLOYMENT.md`.
 - **Position management in `v3-sdk`.** `NonfungiblePositionManager`, `Position` and staker helpers
   were left out; this stack exists to route.
-- **Tick data providers.** CL quoting is entirely on-chain today. Local simulation would need tick
-  data from the subgraph, which would cut RPC load for repeated quotes.

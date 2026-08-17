@@ -23,18 +23,22 @@ subgraphs ─► candidate pools ─► live pool state ─► route enumeration
    carry a custom fee and a CL pool can be driven by a dynamic fee module.
 3. **Routes** — a depth-first walk enumerates paths up to `maxHops`, sorted into pure v2, pure CL
    and mixed routes. A path may not use a pool twice.
-4. **Screening** — every route is priced at only its smallest and largest slice, and the best
-   survivors go on to the expensive pass. Both sizes matter: a deep pool wins the full amount while
-   a thin one can still win a small slice. Measured against pricing every route, this returns
-   identical quotes with 3-4x fewer RPC calls.
-5. **Quotes** — surviving routes are priced at every split size by Topaz's own deployed quoters.
+4. **Local ranking** — candidates are scored from pool state already in memory and only the best
+   `maxRoutesToScreen` reach the chain, because on-chain quoting is 86% of a quote's wall clock. v2
+   legs use the real Solidly maths; CL legs use virtual reserves (`L/√P`, `L·√P`), which price impact
+   correctly inside the current tick range. The estimate ranks, it never answers.
+5. **Screening** — surviving routes are priced on chain at their smallest and largest slice, and the
+   best go on to the expensive pass. Both sizes matter: a deep pool wins the full amount while a thin
+   one can still win a small slice. Measured against pricing every route, steps 4 and 5 together
+   return identical quotes with 3-4x fewer RPC calls.
+6. **Quotes** — surviving routes are priced at every split size by Topaz's own deployed quoters.
    `MixedRouteQuoterV1` handles all exact-input routes, since its path encoding treats a v2 hop as a
    flagged tick spacing. Exact output has no mixed quoter, so CL routes go through `QuoterV2` and
    volatile v2 routes are inverted locally; stable pools and mixed routes are excluded from exact
    output entirely, matching what the contracts can actually do.
-6. **Gas** — each quote is adjusted by what that route costs to execute, converted into the quote
+7. **Gas** — each quote is adjusted by what that route costs to execute, converted into the quote
    token through the deepest BNB pool available.
-7. **Split search** — a breadth-first search over percentage allocations, after Uniswap's alpha
+8. **Split search** — a breadth-first search over percentage allocations, after Uniswap's alpha
    router: seed with the best single route, extend with the best complementary allocation that does
    not re-use a pool, keep the best gas-adjusted total.
 
@@ -87,7 +91,13 @@ accept large Multicall3 batches. A paid endpoint is roughly 4x faster end to end
 | `maxSplits` | 3 | most routes one trade may be split across |
 | `maxHops` | 3 | longest path considered |
 | `maxRoutesPerProtocol` | 60 | cap on enumerated routes, bounds quoting cost |
-| `maxRoutesToQuote` | routes/4, 8..32 | routes carried from the screen into the full sweep |
+| `maxRoutesToQuote` | routes found / 4, 12..32 | routes carried from the screen into the full sweep |
+| `maxRoutesToScreen` | 20 | candidates that survive local ranking and reach the chain |
+| `discoveredIntermediariesPerToken` | 5 | deepest pools per traded token whose counterparty becomes routable |
+
+`maxRoutesToQuote` is derived from how many routes were *found*, not how many survived local
+ranking. Deriving it from the narrowed set once shrank the screen from 13 survivors to 5 and cost up
+to 50 bips on trades that split three ways.
 | `includeMixedRoutes` | true | allow routes that cross both stacks |
 | `subgraphPoolCount` | 500 | pools pulled from each subgraph before filtering |
 

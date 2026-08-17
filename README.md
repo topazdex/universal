@@ -1,81 +1,110 @@
-# topaz-universal
+# topazdex-universal
 
-Routing monorepo for [Topaz Dex](https://topazdex.com) on BNB Chain (chain id 56): the Universal Router
-contracts plus the TypeScript stack needed to index Topaz liquidity and route intelligently between
-**Topaz CL** (Slipstream concentrated liquidity) and **Topaz v2** (Solidly volatile and stable) pools.
+Routing stack for [Topaz Dex](https://topazdex.com) on BNB Chain (chain id 56). It prices a swap
+across **Topaz CL** (Slipstream concentrated liquidity) and **Topaz v2** (Solidly volatile and
+stable) in one request, and executes it in one transaction through a forked Universal Router.
+
+```
+  quote.topazdex.com/quote  ──►  smart-order-router  ──►  router-sdk ─┬─ v2-sdk   Solidly pools
+            │                            │                            ├─ v3-sdk   Slipstream CL
+            │                            │                            └─ sdk-core
+            │                            └─ subgraphs (which pools exist)
+            │                               QuoterV2 / MixedRouteQuoterV1 (what they are worth)
+            ▼
+  universal-router-sdk  ──►  UniversalRouter  ──►  PoolFactory / CLFactory pools
+```
+
+## Live
+
+| | |
+| --- | --- |
+| Universal Router | [`0x691e6171e0a434FfE5C9f1759621D05b9efcF6A6`](https://bscscan.com/address/0x691e6171e0a434FfE5C9f1759621D05b9efcF6A6) — verified on BscScan |
+| Quote API | `https://quote.topazdex.com` |
+| Permit2 | `0x000000000022D473030F116dDEE9F6B43aC78BA3` |
+
+```bash
+curl 'https://quote.topazdex.com/quote?tokenIn=BNB&tokenOut=0x55d398326f99059fF775485246999027B3197955&amount=1000000000000000000'
+```
+
+Roughly 0.6s uncached and 0.2s cached, on free public RPCs. Add `&recipient=0x…` and the response
+carries executable calldata.
 
 ## Packages
 
-| package | description |
+All published under `@topazdex` at `0.1.0`.
+
+| package | what it does |
 | --- | --- |
-| [`@topazdex/universal-router`](packages/universal-router) | Solidity Universal Router fork, one entrypoint for swaps across both stacks |
-| [`@topazdex/sdk-core`](packages/sdk-core) | BNB native currency, canonical tokens, chain constants |
-| [`@topazdex/v2-sdk`](packages/v2-sdk) | Solidly pool math, volatile and stable |
-| [`@topazdex/v3-sdk`](packages/v3-sdk) | Slipstream CL pool math, keyed by tick spacing |
-| [`@topazdex/router-sdk`](packages/router-sdk) | mixed v2/CL routes and multi-route trades |
-| [`@topazdex/universal-router-sdk`](packages/universal-router-sdk) | trade → Universal Router calldata |
-| [`@topazdex/smart-order-router`](packages/smart-order-router) | pool indexing, route search, on-chain quoting, split selection |
-| [`@topazdex/routing-api`](packages/routing-api) | HTTP quote service over the router |
+| [`universal-router`](packages/universal-router) | Solidity. One entrypoint for swaps across both stacks |
+| [`sdk-core`](packages/sdk-core) | BNB native currency, canonical tokens, chain constants |
+| [`v2-sdk`](packages/v2-sdk) | Solidly pool maths, volatile and stable |
+| [`v3-sdk`](packages/v3-sdk) | Slipstream CL, keyed by tick spacing |
+| [`router-sdk`](packages/router-sdk) | mixed v2/CL routes, multi-route trades |
+| [`universal-router-sdk`](packages/universal-router-sdk) | trade → Universal Router calldata |
+| [`smart-order-router`](packages/smart-order-router) | pool discovery, route search, quoting, split selection |
+| [`routing-api`](packages/routing-api) | HTTP quote service (not published; it is a service) |
 
-All eight packages publish under the `@topazdex` scope on npm, except the routing API, which is a
-service rather than a library.
-
-Every package is tested against live BNB Chain mainnet state — no mocked pools, and no hardcoded
-expected amounts: quotes are checked against Topaz's own deployed `Pool.getAmountOut`, `QuoterV2`
-and `MixedRouteQuoterV1`, and calldata is executed on a fork.
+```bash
+npm install @topazdex/smart-order-router      # route in-process
+npm install @topazdex/universal-router-sdk    # just build calldata
+```
 
 ## Topaz on BNB Chain
 
 Two liquidity stacks share one ve(3,3) layer:
 
-- **v2** — Solidly pools created by `PoolFactory`, keyed `(token0, token1, stable)`. Volatile pools use
-  `xy=k`, stable pools use `x³y+xy³=k`. Fees are basis points scaled by 1e4 (`30` = 0.30%) and can be
-  overridden per pool.
-- **CL** — Slipstream pools created by `CLFactory`, keyed `(token0, token1, tickSpacing)`. Fees are in
-  pips (1e-6) and can be dynamic. Default map: `1→100`, `50→500`, `100→1000`, `200→3000`, `2000→10000`.
+- **v2** — Solidly pools from `PoolFactory`, keyed `(token0, token1, stable)`. Volatile is `xy=k`,
+  stable is `x³y+xy³=k`. Fees are basis points against 10 000 (`30` = 0.30%) and can be overridden
+  per pool.
+- **CL** — Slipstream pools from `CLFactory`, keyed `(token0, token1, tickSpacing)`. Fees are pips
+  (1e-6) and can be dynamic. Default map: `1→100`, `50→500`, `100→1000`, `200→3000`, `2000→10000`.
 
-Both factories deploy pools as ERC-1167 clones, so pool addresses are derivable off-chain from the
-factory, the clone implementation and the pool key.
+Both factories deploy pools as **ERC-1167 clones**, so addresses derive off-chain from the factory,
+the clone implementation and the pool key — not from init code as in Uniswap.
 
-Canonical addresses live in [`packages/universal-router/script/constants/BscMainnet.sol`](packages/universal-router/script/constants/BscMainnet.sol).
+Mixed routes reuse the CL path layout, flagging v2 hops in the 3-byte pool slot: `0x400000` for
+volatile, `0x200000` for stable, anything else is a CL tick spacing. That is what Topaz's deployed
+`MixedRouteQuoterV1` expects.
 
-### Mixed route path encoding
+Canonical addresses live in
+[`packages/universal-router/script/constants/BscMainnet.sol`](packages/universal-router/script/constants/BscMainnet.sol).
 
-Topaz's deployed `MixedRouteQuoterV1` reuses the CL path layout (`token ‖ uint24 ‖ token ‖ …`) and encodes
-v2 hops in the 3 byte pool parameter:
-
-| value | meaning |
-| --- | --- |
-| `0x400000` (`1 << 22`) | Topaz v2 volatile pool |
-| `0x200000` (`1 << 21`) | Topaz v2 stable pool |
-| anything else | Topaz CL pool with that tick spacing |
-
-The smart order router must emit this encoding when quoting mixed routes.
-
-## Getting started
+## Working on it
 
 ```bash
-cp .env.example .env        # set BSC_MAINNET_RPC to an archive endpoint
+cp .env.example .env      # set BSC_MAINNET_RPC
 yarn install
 yarn build
-
-yarn test:router            # 41 Solidity fork tests against live Topaz contracts
-yarn test                   # every package, including anvil-fork end to end tests
+yarn test                 # ~4 min; needs foundry and anvil on PATH
 ```
 
-Foundry and `anvil` must be on `PATH`: the TypeScript end-to-end tests boot a fork and deploy the
-router onto it.
+Every suite runs against **live BNB Chain state** — no mocked pools, and no hardcoded expected
+amounts. Values come from Topaz's own `Pool.getAmountOut`, `QuoterV2` and `MixedRouteQuoterV1`, and
+SDK-built calldata is executed on an anvil fork. Without `BSC_MAINNET_RPC` the network suites skip
+silently, so check the counts.
 
-Quote something:
-
-```bash
-UNIVERSAL_ROUTER_ADDRESS=0x… yarn workspace @topazdex/routing-api start
-curl 'localhost:3000/quote?tokenIn=BNB&tokenOut=0x55d398326f99059fF775485246999027B3197955&amount=1000000000000000000'
-```
+| suite | tests |
+| --- | --- |
+| universal-router (forge) | 43 |
+| smart-order-router | 30 |
+| routing-api | 26 |
+| v2-sdk | 17 |
+| universal-router-sdk | 9 |
+| sdk-core | 7 |
+| v3-sdk | 6 |
+| router-sdk | 5 |
 
 ## Docs
 
-- [Frontend integration](docs/FRONTEND_INTEGRATION.md) — getting a quote and executing it, for dapp developers
-- [Architecture](docs/ARCHITECTURE.md) — why each package exists, what was forked from where, and how each layer is verified
-- [Router deployment](docs/DEPLOYMENT.md) — deploying and verifying the Universal Router
-- [Routing API deployment](docs/ROUTING_API_DEPLOYMENT.md) — running the quote service in production
+| | |
+| --- | --- |
+| [Frontend integration](docs/FRONTEND_INTEGRATION.md) | quoting, approvals, Permit2, execution — start here for a dapp |
+| [Architecture](docs/ARCHITECTURE.md) | what was forked from where, and why each decision |
+| [Router deployment](docs/DEPLOYMENT.md) | deploying and verifying the contract |
+| [Routing API deployment](docs/ROUTING_API_DEPLOYMENT.md) | running the service, tuning, what to watch |
+| [CLAUDE.md](CLAUDE.md) | invariants, traps and open items for anyone picking this up |
+
+## Licensing
+
+GPL-3.0-or-later, inherited from the Velodrome router, except `@topazdex/v3-sdk`, which is
+substantially `@uniswap/v3-sdk` and stays MIT with Uniswap's notice alongside ours.
