@@ -9,7 +9,7 @@ import {
 } from '@topazdex/smart-order-router'
 import express, { Express, Request, Response } from 'express'
 
-import { BadRequestError, QuoteService } from './quote'
+import { BadRequestError, QuotePermit, QuoteService } from './quote'
 
 export interface ServerConfig {
   /** One endpoint, or several to fail over between. Defaults to the public list. */
@@ -48,9 +48,18 @@ export function createApp(config: ServerConfig): Express {
     response.json({ status: 'ok', chainId })
   })
 
+  // POST carries a Permit2 signature comfortably; GET stays for simple quotes and links
+  app.post('/quote', async (request: Request, response: Response) => {
+    await handleQuote(request.body as QueryLike, response)
+  })
+
   app.get('/quote', async (request: Request, response: Response) => {
+    await handleQuote(request.query as QueryLike, response)
+  })
+
+  async function handleQuote(source: QueryLike, response: Response): Promise<void> {
     try {
-      const params = parseQuoteQuery(request.query)
+      const params = parseQuoteQuery(source)
       const quote = await quoteService.quote(params)
       if (!quote) {
         response.status(404).json({ error: 'No route found' })
@@ -61,7 +70,7 @@ export function createApp(config: ServerConfig): Express {
       const message = error instanceof Error ? error.message : 'Unknown error'
       response.status(error instanceof BadRequestError ? 400 : 500).json({ error: message })
     }
-  })
+  }
 
   return app
 }
@@ -113,8 +122,28 @@ function parseQuoteQuery(query: QueryLike) {
     recipient,
     slippageBips,
     deadlineSeconds: query.deadlineSeconds ? Number(query.deadlineSeconds) : undefined,
+    permit: parsePermit(query.permit),
     routingConfig
   }
+}
+
+function parsePermit(value: unknown): QuotePermit | undefined {
+  if (value === undefined || value === null) return undefined
+  if (typeof value !== 'object') throw new BadRequestError('permit must be an object')
+
+  const permit = value as Partial<QuotePermit>
+  const details = permit.details
+  if (!details || typeof details !== 'object') throw new BadRequestError('permit.details is required')
+  for (const field of ['token', 'amount', 'expiration', 'nonce'] as const) {
+    if (details[field] === undefined) throw new BadRequestError(`permit.details.${field} is required`)
+  }
+  if (!permit.spender) throw new BadRequestError('permit.spender is required')
+  if (permit.sigDeadline === undefined) throw new BadRequestError('permit.sigDeadline is required')
+  if (typeof permit.signature !== 'string' || !/^0x[0-9a-fA-F]+$/.test(permit.signature)) {
+    throw new BadRequestError('permit.signature must be a hex string')
+  }
+
+  return permit as QuotePermit
 }
 
 function requireString(query: QueryLike, key: string): string {

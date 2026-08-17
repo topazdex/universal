@@ -14,6 +14,14 @@ export class BadRequestError extends Error {
   }
 }
 
+/** A Permit2 `PermitSingle` plus its EIP-712 signature, as the router consumes it */
+export interface QuotePermit {
+  details: { token: string; amount: string; expiration: string | number; nonce: string | number }
+  spender: string
+  sigDeadline: string | number
+  signature: string
+}
+
 export interface QuoteRequest {
   tokenIn: string
   tokenOut: string
@@ -24,6 +32,11 @@ export interface QuoteRequest {
   /** Basis points, e.g. 50 is 0.5% */
   slippageBips?: number
   deadlineSeconds?: number
+  /**
+   * A signed Permit2 allowance, so the swap pulls funds without a separate approval transaction.
+   * Only meaningful alongside `recipient`, since it only affects the calldata.
+   */
+  permit?: QuotePermit
   routingConfig?: RoutingConfig
 }
 
@@ -52,6 +65,15 @@ export interface QuoteResponse {
   quote: string
   quoteDecimals: string
   quoteGasAdjusted: string
+  /** Slippage applied to the calldata, in basis points */
+  slippageBips: number
+  /**
+   * The limit enforced on chain: the least output an exact input trade will accept, or the most
+   * input an exact output trade will spend. Taken from the same trade the calldata was built from,
+   * so it always agrees with it.
+   */
+  minimumAmountOut?: string
+  maximumAmountIn?: string
   gasUseEstimate: string
   gasUseEstimateQuote: string
   routes: QuoteResponseRoute[]
@@ -77,15 +99,25 @@ export class QuoteService {
     if (currencyIn.equals(currencyOut)) throw new BadRequestError('tokenIn and tokenOut must differ')
 
     const exactIn = request.tradeType === TradeType.EXACT_INPUT
+    const slippageBips = request.slippageBips ?? 50
     const amountCurrency = exactIn ? currencyIn : currencyOut
     const quoteCurrency = exactIn ? currencyOut : currencyIn
     const amount = CurrencyAmount.fromRawAmount(amountCurrency, request.amount)
 
+    if (request.permit && !currencyIn.isNative) {
+      const permitted = request.permit.details.token.toLowerCase()
+      if (permitted !== currencyIn.wrapped.address.toLowerCase()) {
+        throw new BadRequestError('permit.details.token must be the input token')
+      }
+    }
+
     const swapOptions = request.recipient
       ? {
-          slippageTolerance: new Percent(request.slippageBips ?? 50, 10_000),
+          slippageTolerance: new Percent(slippageBips, 10_000),
           recipient: request.recipient,
-          deadline: Math.floor(Date.now() / 1000) + (request.deadlineSeconds ?? 1800)
+          deadline: Math.floor(Date.now() / 1000) + (request.deadlineSeconds ?? 1800),
+          // a permit on a native input would be meaningless: there is no ERC20 to pull
+          ...(request.permit && !currencyIn.isNative ? { inputTokenPermit: request.permit } : {})
         }
       : undefined
 
@@ -94,7 +126,7 @@ export class QuoteService {
       ...request.routingConfig,
       ...(baseTokens ? { baseTokens } : {})
     })
-    return route ? serialize(route, request.tradeType, amount) : null
+    return route ? serialize(route, request.tradeType, amount, slippageBips) : null
   }
 
   private async resolveBaseTokens(): Promise<Token[] | undefined> {
@@ -116,8 +148,14 @@ export class QuoteService {
   }
 }
 
-function serialize(route: SwapRoute, tradeType: TradeType, amount: CurrencyAmount<Currency>): QuoteResponse {
+function serialize(
+  route: SwapRoute,
+  tradeType: TradeType,
+  amount: CurrencyAmount<Currency>,
+  slippageBips: number
+): QuoteResponse {
   const exactIn = tradeType === TradeType.EXACT_INPUT
+  const slippage = new Percent(slippageBips, 10_000)
 
   return {
     blockNumber: route.blockNumber,
@@ -126,6 +164,10 @@ function serialize(route: SwapRoute, tradeType: TradeType, amount: CurrencyAmoun
     quote: route.quote.quotient.toString(),
     quoteDecimals: route.quote.toExact(),
     quoteGasAdjusted: route.quoteGasAdjusted.quotient.toString(),
+    slippageBips,
+    ...(exactIn
+      ? { minimumAmountOut: route.trade.minimumAmountOut(slippage).quotient.toString() }
+      : { maximumAmountIn: route.trade.maximumAmountIn(slippage).quotient.toString() }),
     gasUseEstimate: route.estimatedGasUsed.toString(),
     gasUseEstimateQuote: route.estimatedGasUsedQuoteToken.quotient.toString(),
     routes: route.routes.map(entry => ({

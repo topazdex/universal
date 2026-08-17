@@ -14,7 +14,14 @@ yarn workspace @topazdex/routing-api build
 yarn workspace @topazdex/routing-api start
 ```
 
-## `GET /quote`
+Integrating a frontend against this? Start with
+[docs/FRONTEND_INTEGRATION.md](../../docs/FRONTEND_INTEGRATION.md), which covers approvals, Permit2
+signing and execution end to end.
+
+## `GET /quote` and `POST /quote`
+
+`POST` takes the same fields as a JSON body, and is the only way to pass a Permit2 signature.
+
 
 | parameter | required | description |
 | --- | --- | --- |
@@ -24,6 +31,7 @@ yarn workspace @topazdex/routing-api start
 | `type` | no | `exactIn` (default) or `exactOut` |
 | `recipient` | no | supplying it returns executable `methodParameters` |
 | `slippageBips` | no | default 50 (0.5%) |
+| `permit` | no | a signed Permit2 `PermitSingle`, POST only |
 | `deadlineSeconds` | no | default 1800 |
 | `maxHops`, `maxSplits`, `distributionPercent`, `includeMixedRoutes` | no | routing knobs, see the SOR README |
 

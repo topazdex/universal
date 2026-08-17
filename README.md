@@ -75,6 +75,7 @@ curl 'localhost:3000/quote?tokenIn=BNB&tokenOut=0x55d398326f99059fF7754852469990
 
 ## Docs
 
+- [Frontend integration](docs/FRONTEND_INTEGRATION.md) — getting a quote and executing it, for dapp developers
 - [Architecture](docs/ARCHITECTURE.md) — why each package exists, what was forked from where, and how each layer is verified
 - [Router deployment](docs/DEPLOYMENT.md) — deploying and verifying the Universal Router
 - [Routing API deployment](docs/ROUTING_API_DEPLOYMENT.md) — running the quote service in production
