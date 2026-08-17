@@ -100,8 +100,12 @@ docker build -f packages/routing-api/Dockerfile -t topazdex/routing-api .
 
 ## Tests
 
-`src/server.test.ts` runs the service against an anvil fork of BNB Chain with the Universal Router
-deployed, and executes the calldata the API hands back.
+| file | covers |
+| --- | --- |
+| `server.test.ts` | the service against an anvil fork with the Universal Router deployed — the calldata it returns is executed |
+| `permit.test.ts` | a swap pulled entirely by a signed Permit2 allowance, folded into one transaction |
+| `cache.test.ts` | reuse window, in-flight coalescing, and every path that must bypass the cache |
+| `cors.test.ts` | which origins are allowed, and that a preflight reflects requested headers |
 
 ```bash
 yarn workspace @topazdex/routing-api test

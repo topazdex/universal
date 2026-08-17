@@ -75,7 +75,7 @@ the network suites self-skip, which is silent: check the counts below.
 | --- | --- |
 | universal-router | 43 forge (1 skips without `DEPLOYED_UNIVERSAL_ROUTER`) |
 | smart-order-router | 30 |
-| routing-api | 26 |
+| routing-api | 39 |
 | v2-sdk | 17 |
 | universal-router-sdk | 9 |
 | sdk-core | 7 |
@@ -169,7 +169,9 @@ in `~/.npmrc` (a normal login session forces an OTP per publish).
   responses are block-specific and carry executable calldata.
 - **No pool-state cache.** Identical quotes hit the response cache, but a quote differing only in
   amount re-reads every pool.
-- **No GitHub remote.** `topazdex/universal` did not exist as of the last check, which is why the
-  manifests carry no `repository` field. Add it when the repo is created.
+- **Published packages lag the repo.** All seven `@topazdex` packages are on npm at `0.1.0`, but
+  `repository`/`homepage` metadata was added after that publish, so the npm pages will not link back
+  to GitHub until the next version goes out. `./script/publish.sh` skips a version already on the
+  registry, so shipping the metadata needs a version bump.
 - **Position management** (`NonfungiblePositionManager`, `Position`, staker) was deliberately left
   out of `v3-sdk`. This stack routes; it does not manage liquidity.

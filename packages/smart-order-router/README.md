@@ -94,12 +94,12 @@ accept large Multicall3 batches. A paid endpoint is roughly 4x faster end to end
 | `maxRoutesToQuote` | routes found / 4, 12..32 | routes carried from the screen into the full sweep |
 | `maxRoutesToScreen` | 20 | candidates that survive local ranking and reach the chain |
 | `discoveredIntermediariesPerToken` | 5 | deepest pools per traded token whose counterparty becomes routable |
+| `includeMixedRoutes` | true | allow routes that cross both stacks |
+| `subgraphPoolCount` | 500 | pools pulled from each subgraph before filtering |
 
 `maxRoutesToQuote` is derived from how many routes were *found*, not how many survived local
 ranking. Deriving it from the narrowed set once shrank the screen from 13 survivors to 5 and cost up
 to 50 bips on trades that split three ways.
-| `includeMixedRoutes` | true | allow routes that cross both stacks |
-| `subgraphPoolCount` | 500 | pools pulled from each subgraph before filtering |
 
 Quote count is `routes × (100 / distributionPercent)`, and each quote simulates a real swap, so
 these two knobs dominate latency. Raise `distributionPercent` to 25 for a fast approximate quote.

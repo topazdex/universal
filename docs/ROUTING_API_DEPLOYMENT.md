@@ -90,13 +90,13 @@ Choices baked into `fly.toml`, and when to change them:
 
 | setting | value | why |
 | --- | --- | --- |
-| `primary_region` | `sin` | put the app near **your RPC provider**, not near your users — a quote is ~50 sequential-ish round trips to the RPC and one to the client |
+| `primary_region` | `ord` | put the app near **your RPC provider**, not near your users — a quote is ~50 sequential-ish round trips to the RPC and one to the client |
 | `auto_stop_machines` | `off` | a cold start costs seconds on top of an already multi-second quote |
 | `min_machines_running` | 1 | same reason |
 | `concurrency.soft_limit` | 15 | a quote holds the request open while waiting on the RPC, so a machine saturates at a low request count |
 | `[[vm]] size` | `shared-cpu-2x`, 1GB | the work is IO bound; memory is for the pool cache |
 
-Scale out rather than up: `fly scale count 2 --region sin`. Watch your RPC provider's rate limit
+Scale out rather than up: `fly scale count 2 --region ord`. Watch your RPC provider's rate limit
 before adding machines — each one multiplies RPC load.
 
 ### Docker (recommended for other hosts)
