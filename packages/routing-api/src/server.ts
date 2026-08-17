@@ -9,7 +9,8 @@ import {
 } from '@topazdex/smart-order-router'
 import express, { Express, NextFunction, Request, Response } from 'express'
 
-import { BadRequestError, QuotePermit, QuoteService } from './quote'
+import { ResponseCache } from './cache'
+import { BadRequestError, QuotePermit, QuoteResponse, QuoteService } from './quote'
 
 /** Browser origins allowed to call the API when nothing is configured */
 export const DEFAULT_CORS_ORIGINS = [
@@ -33,6 +34,8 @@ export interface ServerConfig {
   baseTokens?: string[]
   /** Browser origins allowed to call this API. `['*']` allows any. */
   corsOrigins?: string[]
+  /** How long an identical quote is reused. 0 disables it. Default 2000ms, about two blocks. */
+  quoteCacheTtlMs?: number
 }
 
 export function createApp(config: ServerConfig): Express {
@@ -49,7 +52,8 @@ export function createApp(config: ServerConfig): Express {
     multicallProvider: multicall,
     universalRouterAddress: config.universalRouterAddress
   })
-  const quoteService = new QuoteService(router, tokenProvider, chainId, config.baseTokens)
+  const cache = new ResponseCache<QuoteResponse | null>({ ttlMs: config.quoteCacheTtlMs })
+  const quoteService = new QuoteService(router, tokenProvider, chainId, config.baseTokens, cache)
 
   const app = express()
   app.use(express.json())
@@ -220,6 +224,7 @@ if (require.main === module) {
       .split(',')
       .map(address => address.trim())
       .filter(Boolean),
+    quoteCacheTtlMs: process.env.QUOTE_CACHE_TTL_MS ? Number(process.env.QUOTE_CACHE_TTL_MS) : undefined,
     corsOrigins: process.env.CORS_ORIGINS
       ? process.env.CORS_ORIGINS.split(',')
           .map(origin => origin.trim())

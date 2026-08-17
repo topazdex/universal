@@ -269,10 +269,18 @@ A revert here almost always means the quote went stale — re-quote and retry.
 
 ---
 
-## 4. Keeping quotes fresh
+## 4. CORS
 
-Every quote is computed at one block (`blockNumber`) and enforces `minimumAmountOut` on chain. Two
-consequences:
+The API allows `http://localhost:3000`, `https://app.topazdex.com`, and the apex and `www` origins.
+A `POST` with `content-type: application/json` triggers a preflight, which is answered with a 24
+hour `Access-Control-Max-Age`. If you need another origin, it is one deployment variable
+(`CORS_ORIGINS`) — ask rather than proxying around it.
+
+## 5. Keeping quotes fresh
+
+Every quote is computed at one block (`blockNumber`) and enforces `minimumAmountOut` on chain.
+Identical requests are served from a 2 second cache, so polling faster than that is free but gains
+nothing. Two consequences:
 
 - **Re-quote on a timer.** Every 10-15 seconds while the swap screen is open is reasonable; BNB
   Chain produces a block every 0.75s.
@@ -293,7 +301,7 @@ useQuery({
 
 ---
 
-## 5. Behaviour worth knowing before you hit it
+## 6. Behaviour worth knowing before you hit it
 
 **Stable pools cannot serve exact output.** The Solidly stable curve has no closed-form inverse, so
 the router excludes stable and mixed routes from `exactOut` searches. A stable-only pair quoted as
@@ -319,7 +327,7 @@ user's balance is in.
 
 ---
 
-## 6. End to end, in the interface's stack
+## 7. End to end, in the interface's stack
 
 wagmi 2.x + viem 2.x + react-query, matching what `topaz-interface` already depends on:
 
@@ -395,7 +403,7 @@ second is made once the user commits, so the calldata is as fresh as possible.
 
 ---
 
-## 7. If you would rather build calldata in the browser
+## 8. If you would rather build calldata in the browser
 
 The same encoding is available client-side, which is useful for custom flows the API does not model:
 

@@ -26,6 +26,8 @@ Latency is dominated by RPC round trips, so co-locate the service with the RPC p
 | `MULTICALL_BATCH_SIZE` | no | `15` | quote calls per `eth_call`; see the tuning section before changing it |
 | `MULTICALL_CONCURRENCY` | no | `16` | `eth_call`s in flight; lower it if the RPC rate limits you |
 | `ROUTING_BASE_TOKENS` | no | `BASE_TOKENS` | comma separated addresses the router may hop through |
+| `CORS_ORIGINS` | no | localhost:3000, app/apex/www topazdex.com | comma separated browser origins; `*` allows any |
+| `QUOTE_CACHE_TTL_MS` | no | `2000` | how long an identical quote is reused; `0` disables it |
 
 No secrets beyond the RPC URL. If your RPC key is in the URL, treat the whole variable as a secret.
 
@@ -177,7 +179,28 @@ location /quote {
 Without a limit, one client can saturate your RPC quota: each quote is ~15-35 `eth_call`s, and the
 service issues 16 of them concurrently.
 
-## 6. What to watch
+## 6. Caching
+
+Every quote runs the whole pipeline — pool state plus ~100 swap simulations — so without a cache two
+identical requests seconds apart cost twice as much and return the same number. Responses are cached
+for `QUOTE_CACHE_TTL_MS` (2s, about two BNB Chain blocks), and identical requests already in flight
+are coalesced into one computation.
+
+Measured against public endpoints, same quote repeated:
+
+| | 1st | 2nd | 3rd | 4th | 10 concurrent |
+| --- | --- | --- | --- | --- | --- |
+| cache off | 2642ms | 1594ms | 1775ms | 1802ms | 4547ms |
+| cache on | 2151ms | 1ms | 1ms | 0ms | 5ms |
+
+Two things are deliberately never cached: a request carrying a Permit2 signature (single use), and a
+failure (one RPC blip would otherwise be served for the whole TTL).
+
+The TTL bounds how stale a quote can be, so keep it near block time. The calldata embeds the
+slippage limit computed at the cached block; if the price moves past it the transaction reverts
+rather than filling badly.
+
+## 7. What to watch
 
 | signal | why it matters |
 | --- | --- |
@@ -187,7 +210,7 @@ service issues 16 of them concurrently.
 | `5xx` | RPC errors surface here |
 | RPC call volume | quote calls ≈ `routes × (100 / distributionPercent)`, batched 15 per `eth_call`, so this scales with traffic and with routing config |
 
-## 7. Multicall batch size
+## 8. Multicall batch size
 
 The defaults are measured, not guessed. A 5 BNB quote before route screening was added, batches run
 16 at a time — screening cut the call counts 3-4x since, but the shape of the curve is unchanged:
@@ -216,7 +239,7 @@ the ceiling that constrains quotes does not apply.
 Lower `MULTICALL_BATCH_SIZE` if you see splits in your logs; lower `MULTICALL_CONCURRENCY` if your
 provider rate limits you.
 
-## 8. Hops, intermediaries, and what they cost
+## 9. Hops, intermediaries, and what they cost
 
 `maxHops` defaults to **3**, over the intermediary tokens in `BASE_TOKENS`. Routes enumerated for
 BNB → TOPAZ, which sets how much quoting there is to do:
@@ -288,7 +311,7 @@ why raising `maxHops` still converges on the same answer.
 If you raise `maxHops` past 4 or add many intermediaries, watch that `maxRoutesToQuote` grows with
 it — a screen that is too narrow for the search will quietly return a worse quote.
 
-## 9. Tuning cost against quality
+## 10. Tuning cost against quality
 
 Per-request knobs, all query parameters:
 
@@ -305,12 +328,11 @@ For a price display, `distributionPercent=25` is usually indistinguishable and m
 actual swap, leave the defaults: on a 5 BNB → TOPAZ trade, the default 5% granularity beat the best
 single route by 1.4%, which dwarfs any gas saving from a simpler route.
 
-## 10. Known gaps before heavy production traffic
+## 11. Known gaps before heavy production traffic
 
-- **No pool-state cache.** Every quote re-reads pool state from the chain. A cache keyed by block
-  number would cut RPC load dramatically for repeated pairs — the single biggest remaining win.
+- **No pool-state cache.** Identical quotes are served from the response cache, but a quote that
+  differs only in amount still re-reads every pool. Caching pool state by block would help there.
 - **The subgraph pool list is cached for 5 minutes** (`subgraphCacheTtlMs`), and a brand new pool is
   invisible until that refresh. Quotes are never wrong because of it — pool state always comes from
   the chain — but a fresh pool can be missed.
-- **No request coalescing.** Identical concurrent quotes each do their own work.
 - **No auth or per-key quotas.** Fine behind an internal proxy; not fine exposed directly.

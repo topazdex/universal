@@ -4,6 +4,8 @@ import { RoutingConfig, SwapRoute, TokenProvider, TopazRouter } from '@topazdex/
 import { Pool as V2Pool } from '@topazdex/v2-sdk'
 import { Pool as CLPool } from '@topazdex/v3-sdk'
 
+import { ResponseCache } from './cache'
+
 export const NATIVE_ALIASES = new Set(['bnb', 'native', '0x0000000000000000000000000000000000000000'])
 
 /** Anything the caller can fix by changing the request, as opposed to a fault on our side */
@@ -88,10 +90,17 @@ export class QuoteService {
     private readonly tokenProvider: TokenProvider,
     private readonly chainId: number,
     /** Overrides the default routing hubs; resolved on first use */
-    private readonly baseTokenAddresses?: string[]
+    private readonly baseTokenAddresses?: string[],
+    private readonly cache: ResponseCache<QuoteResponse | null> = new ResponseCache()
   ) {}
 
   public async quote(request: QuoteRequest): Promise<QuoteResponse | null> {
+    // a permit is single use, so a request carrying one must never be served from cache
+    if (request.permit || !this.cache.enabled) return this.computeQuote(request)
+    return this.cache.resolve(cacheKey(request), () => this.computeQuote(request))
+  }
+
+  private async computeQuote(request: QuoteRequest): Promise<QuoteResponse | null> {
     const [currencyIn, currencyOut] = await Promise.all([
       this.resolveCurrency(request.tokenIn),
       this.resolveCurrency(request.tokenOut)
@@ -146,6 +155,20 @@ export class QuoteService {
       throw new BadRequestError(`could not resolve token ${identifier} as an ERC20 on this chain`)
     }
   }
+}
+
+/** Everything that changes the response, including what ends up inside the calldata */
+function cacheKey(request: QuoteRequest): string {
+  return JSON.stringify([
+    request.tokenIn.toLowerCase(),
+    request.tokenOut.toLowerCase(),
+    request.amount,
+    request.tradeType,
+    request.recipient?.toLowerCase() ?? null,
+    request.slippageBips ?? null,
+    request.deadlineSeconds ?? null,
+    request.routingConfig ?? null
+  ])
 }
 
 function serialize(

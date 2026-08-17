@@ -2,9 +2,12 @@
 #
 # Publishes the public @topazdex packages to npm, in dependency order.
 #
-#   npm login          # or set an automation token in ~/.npmrc
-#   ./script/publish.sh --dry-run
-#   ./script/publish.sh
+#   ./script/publish.sh --dry-run           # packs everything, publishes nothing
+#   ./script/publish.sh --otp=123456        # interactive login: npm asks for a 2FA code
+#   ./script/publish.sh                     # automation token in ~/.npmrc: no code needed
+#
+# An automation token (npmjs.com -> Access Tokens -> Granular, with publish rights) bypasses 2FA,
+# which is what CI wants. A normal `npm login` session still requires --otp on every publish.
 #
 # Uses `yarn npm publish`, not `npm publish`: yarn rewrites the `workspace:*` ranges into real
 # versions on the way out. Publishing these with plain npm would ship unresolvable dependencies.
@@ -15,7 +18,14 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 DRY_RUN=false
-[[ "${1:-}" == "--dry-run" ]] && DRY_RUN=true
+OTP=""
+for arg in "$@"; do
+  case "$arg" in
+    --dry-run) DRY_RUN=true ;;
+    --otp=*) OTP="${arg#--otp=}" ;;
+    *) echo "unknown argument: $arg" >&2; exit 1 ;;
+  esac
+done
 
 # dependency order: a package must exist on the registry before anything that depends on it
 PACKAGES=(
@@ -37,9 +47,8 @@ fi
 
 if ! $DRY_RUN; then
   echo "==> checking authentication"
-  # --publish: the token is scoped to registry.npmjs.org, not Yarn's default read mirror
-  yarn npm whoami --publish || {
-    echo "not logged in: run 'npm login', or put an automation token in ~/.npmrc" >&2
+  npm whoami --registry https://registry.npmjs.org || {
+    echo "not logged in: run 'npm login'" >&2
     exit 1
   }
 fi
@@ -62,10 +71,19 @@ for package in "${PACKAGES[@]}"; do
     continue
   fi
 
+  # yarn packs (it rewrites the workspace:* ranges into real versions), npm publishes (it holds
+  # the credentials). Publishing the raw workspace manifest with npm would ship unresolvable deps.
+  tarball="$(mktemp -d)/${package//\//-}.tgz"
+  yarn workspace "$package" pack --out "$tarball" >/dev/null
+
   if $DRY_RUN; then
-    yarn workspace "$package" pack --dry-run | tail -5
+    echo "    packed $(du -h "$tarball" | cut -f1), deps:"
+    tar -xzOf "$tarball" package/package.json | node -e \
+      'const d=JSON.parse(require("fs").readFileSync(0,"utf8"));for(const [k,v] of Object.entries(d.dependencies||{}))if(k.startsWith("@topazdex/"))console.log("      "+k+" "+v)'
   else
-    yarn workspace "$package" npm publish --access public
+    # an OTP is valid for about 30 seconds, so a long run may need a fresh one partway through
+    npm publish "$tarball" --access public --registry https://registry.npmjs.org \
+      ${OTP:+--otp="$OTP"}
   fi
 done
 
