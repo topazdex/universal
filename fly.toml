@@ -1,0 +1,44 @@
+# Fly.io config for the Topaz routing API.
+#   fly launch --no-deploy --copy-config     (first time, to create the app)
+#   fly secrets set BSC_MAINNET_RPC="https://…"
+#   fly deploy
+#
+# Run from the repo root: the Dockerfile needs the whole workspace as build context.
+app = "topaz-routing-api"
+primary_region = "sin"  # put this near your RPC provider, not near your users: latency is RPC bound
+
+[build]
+  dockerfile = "packages/routing-api/Dockerfile"
+
+[env]
+  PORT = "3000"
+  CHAIN_ID = "56"
+  NODE_ENV = "production"
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_start_machines = true
+  # quotes are latency sensitive and a cold start costs seconds, so keep one machine warm
+  auto_stop_machines = "off"
+  min_machines_running = 1
+  processes = ["app"]
+
+  # a quote holds a request open for seconds while it waits on the RPC, so a machine saturates at a
+  # low request count; these limits make Fly spread load rather than queue it
+  [http_service.concurrency]
+    type = "requests"
+    soft_limit = 15
+    hard_limit = 30
+
+  [[http_service.checks]]
+    grace_period = "15s"
+    interval = "30s"
+    method = "GET"
+    path = "/health"
+    protocol = "http"
+    timeout = "5s"
+
+[[vm]]
+  size = "shared-cpu-2x"
+  memory = "1gb"

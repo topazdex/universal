@@ -8,7 +8,7 @@ whether it is fast or useless.
 
 | what | why |
 | --- | --- |
-| **An unthrottled BNB Chain RPC** | Every quote fires hundreds of `eth_call`s. A public dataseed node will rate-limit you into 30-second quotes. Use a paid Alchemy/QuickNode/Ankr endpoint, or your own node. |
+| **An unthrottled BNB Chain RPC** | A quote is ~50 `eth_call`s, run 8 at a time. A public dataseed node will rate-limit that into multi-second quotes. Use a paid Alchemy/QuickNode/Ankr endpoint, or your own node. |
 | Node 22 | matches CI and the Docker image |
 | The Universal Router address | already recorded in `@topazdex/universal-router-sdk`; only override it for a fork |
 
@@ -22,12 +22,45 @@ Latency is dominated by RPC round trips, so co-locate the service with the RPC p
 | `PORT` | no | `3000` | |
 | `CHAIN_ID` | no | `56` | |
 | `UNIVERSAL_ROUTER_ADDRESS` | no | recorded deployment | overrides the address used for calldata |
+| `MULTICALL_BATCH_SIZE` | no | `40` | quote calls per `eth_call`; lower it if the RPC rejects batches on gas |
+| `MULTICALL_CONCURRENCY` | no | `8` | `eth_call`s in flight; lower it if the RPC rate limits you |
 
 No secrets beyond the RPC URL. If your RPC key is in the URL, treat the whole variable as a secret.
 
 ## 3. Run it
 
-### Docker (recommended)
+### Fly.io
+
+`fly.toml` at the repo root is ready to go. Deploy from the repo root — the Dockerfile needs the
+whole workspace as build context.
+
+```bash
+fly launch --no-deploy --copy-config          # first time only, creates the app
+fly secrets set BSC_MAINNET_RPC="https://…"   # the only secret
+fly deploy
+fly logs
+```
+
+Then:
+
+```bash
+curl -s https://topaz-routing-api.fly.dev/health
+```
+
+Choices baked into `fly.toml`, and when to change them:
+
+| setting | value | why |
+| --- | --- | --- |
+| `primary_region` | `sin` | put the app near **your RPC provider**, not near your users — a quote is ~50 sequential-ish round trips to the RPC and one to the client |
+| `auto_stop_machines` | `off` | a cold start costs seconds on top of an already multi-second quote |
+| `min_machines_running` | 1 | same reason |
+| `concurrency.soft_limit` | 15 | a quote holds the request open while waiting on the RPC, so a machine saturates at a low request count |
+| `[[vm]] size` | `shared-cpu-2x`, 1GB | the work is IO bound; memory is for the pool cache |
+
+Scale out rather than up: `fly scale count 2 --region sin`. Watch your RPC provider's rate limit
+before adding machines — each one multiplies RPC load.
+
+### Docker (recommended for other hosts)
 
 ```bash
 # from the repo root, the Dockerfile expects the workspace as context
@@ -99,21 +132,23 @@ The service has no TLS, no auth and no rate limiting. Terminate TLS and rate lim
 location /quote {
     limit_req zone=quotes burst=20 nodelay;
     proxy_pass http://127.0.0.1:3000;
-    proxy_read_timeout 60s;   # a cold quote can take tens of seconds
+    proxy_read_timeout 60s;   # a default quote takes a few seconds, more on a busy RPC
 }
 ```
 
 `limit_req_zone $binary_remote_addr zone=quotes:10m rate=5r/s;` in the `http` block is a sane start.
-Without a limit, one client can saturate your RPC quota, since each quote is hundreds of calls.
+Without a limit, one client can saturate your RPC quota: each quote is ~50 `eth_call`s, and the
+service issues 8 of them concurrently.
 
 ## 6. What to watch
 
 | signal | why it matters |
 | --- | --- |
 | p95 latency on `/quote` | dominated by RPC round trips; a jump means the RPC is degrading |
+| RPC requests per quote | ~50 for a default 5 BNB quote; a big rise means batches are being split, i.e. the node is rejecting them on gas |
 | rate of `404 No route found` | a spike usually means the subgraph is stale or the RPC is failing calls |
 | `5xx` | RPC errors surface here |
-| RPC call volume | quotes ≈ `routes × (100 / distributionPercent)` calls, so this scales with traffic and with routing config |
+| RPC call volume | quote calls ≈ `routes × (100 / distributionPercent)`, batched 40 per `eth_call`, so this scales with traffic and with routing config |
 
 ## 7. Tuning cost against quality
 
@@ -133,7 +168,7 @@ single route by 1.4%, which dwarfs any gas saving from a simpler route.
 ## 8. Known gaps before heavy production traffic
 
 - **No pool-state cache.** Every quote re-reads pool state from the chain. A cache keyed by block
-  number would cut RPC load dramatically for repeated pairs.
+  number would cut RPC load dramatically for repeated pairs — the single biggest remaining win.
 - **The subgraph pool list is cached for 5 minutes** (`subgraphCacheTtlMs`), and a brand new pool is
   invisible until that refresh. Quotes are never wrong because of it — pool state always comes from
   the chain — but a fresh pool can be missed.

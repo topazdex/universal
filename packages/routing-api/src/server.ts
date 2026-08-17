@@ -1,4 +1,4 @@
-import { JsonRpcProvider } from '@ethersproject/providers'
+import { StaticJsonRpcProvider } from '@ethersproject/providers'
 import { TradeType } from '@topazdex/sdk-core'
 import { MulticallProvider, TokenProvider, TopazRouter } from '@topazdex/smart-order-router'
 import express, { Express, Request, Response } from 'express'
@@ -9,12 +9,21 @@ export interface ServerConfig {
   rpcUrl: string
   chainId?: number
   universalRouterAddress?: string
+  /** Quote calls per eth_call. Lower it if the RPC rejects batches on gas. */
+  multicallBatchSize?: number
+  /** eth_calls in flight at once. Lower it if the RPC rate limits you. */
+  multicallConcurrency?: number
 }
 
 export function createApp(config: ServerConfig): Express {
   const chainId = config.chainId ?? 56
-  const provider = new JsonRpcProvider(config.rpcUrl, chainId)
-  const multicall = new MulticallProvider(provider)
+  // StaticJsonRpcProvider, not JsonRpcProvider: the latter issues an eth_chainId before every
+  // single request, which doubles the request count for a quote that is otherwise all multicalls
+  const provider = new StaticJsonRpcProvider(config.rpcUrl, chainId)
+  const multicall = new MulticallProvider(provider, {
+    batchSize: config.multicallBatchSize,
+    concurrency: config.multicallConcurrency
+  })
   const tokenProvider = new TokenProvider(multicall, chainId)
   const router = new TopazRouter({
     provider,
@@ -103,7 +112,9 @@ if (require.main === module) {
   const app = createApp({
     rpcUrl,
     chainId: process.env.CHAIN_ID ? Number(process.env.CHAIN_ID) : undefined,
-    universalRouterAddress: process.env.UNIVERSAL_ROUTER_ADDRESS
+    universalRouterAddress: process.env.UNIVERSAL_ROUTER_ADDRESS,
+    multicallBatchSize: process.env.MULTICALL_BATCH_SIZE ? Number(process.env.MULTICALL_BATCH_SIZE) : undefined,
+    multicallConcurrency: process.env.MULTICALL_CONCURRENCY ? Number(process.env.MULTICALL_CONCURRENCY) : undefined
   })
 
   app.listen(port, () => {

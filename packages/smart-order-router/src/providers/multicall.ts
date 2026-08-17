@@ -24,6 +24,8 @@ export interface MulticallOptions {
   blockTag?: number | string
   /** Optional gas ceiling per inner call; left unset the node applies its own cap */
   gasLimitPerCall?: number
+  /** Batches in flight at once. Latency is dominated by round trips, not by local work. */
+  concurrency?: number
 }
 
 /**
@@ -41,17 +43,38 @@ export interface MulticallOptions {
 export class MulticallProvider {
   private readonly multicallInterface = new Interface(MULTICALL3_ABI)
 
-  public constructor(private readonly provider: BaseProvider) {}
+  public constructor(
+    private readonly provider: BaseProvider,
+    /** Defaults for every call, so batching can be tuned to an RPC provider without a rebuild */
+    private readonly defaults: MulticallOptions = {}
+  ) {}
 
-  public async call(calls: Call[], options: MulticallOptions = {}): Promise<CallResult[]> {
+  public async call(calls: Call[], callOptions: MulticallOptions = {}): Promise<CallResult[]> {
+    // an explicitly undefined per-call option must not clobber a configured default
+    const defined = Object.fromEntries(Object.entries(callOptions).filter(([, value]) => value !== undefined))
+    const options: MulticallOptions = { ...this.defaults, ...defined }
     const batchSize = options.batchSize ?? 40
-    const results: CallResult[] = []
+    const concurrency = options.concurrency ?? 8
 
+    const batches: Call[][] = []
     for (let i = 0; i < calls.length; i += batchSize) {
-      results.push(...(await this.callBatch(calls.slice(i, i + batchSize), options)))
+      batches.push(calls.slice(i, i + batchSize))
     }
 
-    return results
+    // batches are independent reads at a fixed block, so run several at once; a quote's wall clock
+    // is almost entirely RPC round trips
+    const results: CallResult[][] = new Array(batches.length)
+    let next = 0
+    const worker = async (): Promise<void> => {
+      for (;;) {
+        const index = next++
+        if (index >= batches.length) return
+        results[index] = await this.callBatch(batches[index], options)
+      }
+    }
+    await Promise.all(Array.from({ length: Math.min(concurrency, batches.length) }, worker))
+
+    return results.flat()
   }
 
   private async callBatch(calls: Call[], options: MulticallOptions): Promise<CallResult[]> {

@@ -1,0 +1,16 @@
+# keep the build context small: fly uploads it on every deploy
+node_modules
+**/node_modules
+**/dist
+**/out
+**/cache
+**/coverage
+packages/universal-router/lib
+.git
+.github
+.yarn/install-state.gz
+.env
+.env.*
+!.env.example
+docs
+*.log

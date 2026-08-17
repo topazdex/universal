@@ -87,7 +87,7 @@ export class QuoteProvider {
 
     const results = await this.multicall.call(calls, {
       blockTag: options.blockTag,
-      batchSize: options.batchSize ?? 10,
+      batchSize: options.batchSize,
       gasLimitPerCall: options.gasLimitPerCall
     })
 
@@ -165,7 +165,7 @@ export class QuoteProvider {
 
     const results = await this.multicall.call(calls, {
       blockTag: options.blockTag,
-      batchSize: options.batchSize ?? 10,
+      batchSize: options.batchSize,
       gasLimitPerCall: options.gasLimitPerCall
     })
 
