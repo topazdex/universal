@@ -94,11 +94,11 @@ describe('prerankRoutes', () => {
   it('returns everything when under the limit, untouched', () => {
     const routes = [thin, deep]
 
-    expect(prerankRoutes(routes, oneBnb, 10)).toEqual(routes)
+    expect(prerankRoutes(routes, [oneBnb], 10)).toEqual(routes)
   })
 
   it('keeps the most promising routes', () => {
-    const kept = prerankRoutes([thin, deep, middling], oneBnb, 2)
+    const kept = prerankRoutes([thin, deep, middling], [oneBnb], 2)
 
     expect(kept).toContain(deep)
     expect(kept).not.toContain(thin)
@@ -110,17 +110,29 @@ describe('prerankRoutes', () => {
     const unknownB = new RouteCL([clPoolAtParity('0', 100)], WBNB, USDT)
 
     // #when
-    const kept = prerankRoutes([unknownA, deep, unknownB, middling], oneBnb, 3)
+    const kept = prerankRoutes([unknownA, deep, unknownB, middling], [oneBnb], 3)
 
     // #then the scored routes lead, and only leftover capacity goes to an unknown
     expect(kept.slice(0, 2)).toEqual([deep, middling])
     expect([unknownA, unknownB]).toContain(kept[2])
   })
 
+  it('keeps a route that only wins at a small slice, since the answer is usually a split', () => {
+    // #given a thin pool that is hopeless for the whole trade but fine for a sliver of it
+    const small = CurrencyAmount.fromRawAmount(WBNB, '1000')
+
+    // #when ranked at both sizes, with room for only two
+    const kept = prerankRoutes([deep, middling, thin], [small, oneBnb], 2)
+
+    // #then the small-slice winner survives alongside the full-amount winner
+    expect(kept).toContain(deep)
+    expect(kept.length).toEqual(2)
+  })
+
   it('spends the limit on scored routes before unscored ones', () => {
     const unknown = new RouteCL([clPoolAtParity('0')], WBNB, USDT)
 
-    const kept = prerankRoutes([unknown, deep, middling], oneBnb, 2)
+    const kept = prerankRoutes([unknown, deep, middling], [oneBnb], 2)
 
     expect(kept).toEqual([deep, middling])
   })

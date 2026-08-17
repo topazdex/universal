@@ -316,11 +316,19 @@ virtual reserves — `L/√P` and `L·√P` — which price impact correctly whi
 current tick range.
 
 Spot price alone was not enough: a first attempt ranked on spot and lost 25 bips on a 5 BNB → TOPAZ
-quote, because it scored a thin pool identically to a deep one. With impact included, ten pairs
-including spoke-to-spoke ones returned **identical quotes** while calls fell from 34 to 16 and a
-1 BNB → TOPAZ quote went from 1782ms to 490ms.
+quote, because it scored a thin pool identically to a deep one. With impact included, calls fell
+from 34 to 16 and a 1 BNB → TOPAZ quote went from 1782ms to 490ms.
 
 The estimate ranks, it never answers: everything it keeps is still priced on chain.
+
+Validated across **39 quotes** spanning 16 pairs and sizes from dust to 20 BNB, against a router
+that prices every route on chain: all 39 identical.
+
+That check earned its keep. An earlier version lost up to 50 bips on large TOPAZ trades, and the
+cause was not the estimate — it was that the screen width was derived from the *narrowed* route
+count, so ranking 52 candidates down to 20 quietly shrank the screen from 13 survivors to 5. Five is
+too few for a trade that splits three ways. The width now follows how many routes were found, with a
+floor of 12.
 
 ### Why routes are screened
 

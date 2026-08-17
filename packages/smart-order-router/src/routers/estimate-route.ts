@@ -75,26 +75,52 @@ function step(pool: TPool, amountIn: CurrencyAmount<Token>): CurrencyAmount<Toke
 }
 
 /**
- * Keeps the `limit` most promising routes.
+ * Keeps the `limit` most promising routes, judged at several trade sizes.
  *
- * Routes with an estimate are ranked first and fill the limit; routes we could not estimate take
- * whatever capacity is left. In practice an estimate only fails when a pool has no liquidity or
- * cannot cover the trade, which is not a route worth spending a round trip on — but they are
- * ordered last rather than discarded outright, so a thin candidate set still gets looked at.
+ * Size matters as much as the ranking. The answer is usually a split, so a route that looks
+ * mediocre at the full amount can still win a small slice of it — a deep pool takes the bulk while
+ * a thin one absorbs the remainder. Ranking on the full amount alone discarded exactly those
+ * routes: it cost up to 50 bips on a large USDT to TOPAZ trade, and no limit below 60 recovered it,
+ * because the winner was not merely ranked low, it was ranked wrongly.
+ *
+ * So routes are ranked once per size and the lists are interleaved, which is the same judgement the
+ * on-chain screen makes when it prices every route at its smallest and largest slice.
+ *
+ * Routes we could not estimate take whatever capacity is left. In practice that only happens when a
+ * pool has no liquidity or cannot cover the trade.
  */
 export function prerankRoutes<T extends AnyRoute<Currency, Currency>>(
   routes: T[],
-  amountIn: CurrencyAmount<Currency>,
+  amounts: CurrencyAmount<Currency>[],
   limit: number
 ): T[] {
   if (routes.length <= limit) return routes
 
-  const scored = routes.map(route => ({ route, estimate: estimateOutput(route, amountIn) }))
-  const unknown = scored.filter(entry => !entry.estimate).map(entry => entry.route)
-  const known = scored
-    .filter((entry): entry is { route: T; estimate: CurrencyAmount<Token> } => Boolean(entry.estimate))
-    .sort((a, b) => (b.estimate.greaterThan(a.estimate) ? 1 : -1))
-    .map(entry => entry.route)
+  const rankings = amounts.map(amount => {
+    const scored = routes.map(route => ({ route, estimate: estimateOutput(route, amount) }))
+    return scored
+      .filter((entry): entry is { route: T; estimate: CurrencyAmount<Token> } => Boolean(entry.estimate))
+      .sort((a, b) => (b.estimate.greaterThan(a.estimate) ? 1 : -1))
+      .map(entry => entry.route)
+  })
 
-  return [...known, ...unknown].slice(0, limit)
+  // take the best from each size in turn, so no single size decides the candidate set
+  const kept = new Set<T>()
+  for (let position = 0; kept.size < limit; position++) {
+    let exhausted = true
+    for (const ranking of rankings) {
+      if (position >= ranking.length) continue
+      exhausted = false
+      kept.add(ranking[position])
+      if (kept.size >= limit) break
+    }
+    if (exhausted) break
+  }
+
+  for (const route of routes) {
+    if (kept.size >= limit) break
+    kept.add(route)
+  }
+
+  return [...kept]
 }

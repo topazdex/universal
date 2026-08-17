@@ -124,14 +124,25 @@ export class TopazRouter {
     )
     if (routes.length === 0) return null
 
-    // narrow locally before spending round trips: everything kept is still priced on chain
+    const { percents, amounts } = splitAmount(amount, config.distributionPercent ?? 5)
+
+    // narrow locally before spending round trips, judged at the same sizes the on-chain screen
+    // uses; everything kept is still priced on chain
     const screenable =
       tradeType === TradeType.EXACT_INPUT
-        ? prerankRoutes(routes, amount, config.maxRoutesToScreen ?? 20)
+        ? prerankRoutes(
+            routes,
+            [amounts[0].amount, amounts[amounts.length - 1].amount],
+            config.maxRoutesToScreen ?? 20
+          )
         : routes
-
-    const { percents, amounts } = splitAmount(amount, config.distributionPercent ?? 5)
-    const quotes = await this.quoteRoutes(screenable, amounts, tradeType, blockNumber, config)
+    // the screen width follows how many routes were *found*, not how many survived local ranking.
+    // Deriving it from the narrowed set shrank the screen along with it, which cost up to 50 bips.
+    const screenWidth = config.maxRoutesToQuote ?? screenWidthFor(routes.length)
+    const quotes = await this.quoteRoutes(screenable, amounts, tradeType, blockNumber, {
+      ...config,
+      maxRoutesToQuote: screenWidth
+    })
     if (quotes.length === 0) return null
 
     const gasPrice = await this.provider.getGasPrice()
@@ -195,7 +206,7 @@ export class TopazRouter {
   ): Promise<RouteWithQuote[]> {
     // scales with how many routes exist: a wider search needs a wider screen, otherwise raising
     // maxHops makes quotes worse rather than better
-    const maxRoutes = config.maxRoutesToQuote ?? Math.min(32, Math.max(8, Math.ceil(routes.length / 4)))
+    const maxRoutes = config.maxRoutesToQuote ?? screenWidthFor(routes.length)
     const options = { blockTag: blockNumber }
 
     if (routes.length <= maxRoutes || amounts.length <= 2) {
@@ -346,6 +357,16 @@ function pickBestRoutes(
   }
 
   return survivors
+}
+
+/**
+ * How many routes survive the screen and get priced at every slice.
+ *
+ * A wider search needs a wider screen, but the floor matters more than the ratio: a trade that
+ * splits three ways needs more than a handful of candidates, whatever the search looked like.
+ */
+function screenWidthFor(routeCount: number): number {
+  return Math.min(32, Math.max(12, Math.ceil(routeCount / 4)))
 }
 
 function splitAmount(
