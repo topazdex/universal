@@ -65,22 +65,25 @@ export function createApp(config: ServerConfig): Express {
 
   // POST carries a Permit2 signature comfortably; GET stays for simple quotes and links
   app.post('/quote', async (request: Request, response: Response) => {
-    await handleQuote(request.body as QueryLike, response)
+    await handleQuote(request.body as QueryLike, response, wantsFresh(request))
   })
 
   app.get('/quote', async (request: Request, response: Response) => {
-    await handleQuote(request.query as QueryLike, response)
+    await handleQuote(request.query as QueryLike, response, wantsFresh(request))
   })
 
-  async function handleQuote(source: QueryLike, response: Response): Promise<void> {
+  async function handleQuote(source: QueryLike, response: Response, skipCache = false): Promise<void> {
     try {
-      const params = parseQuoteQuery(source)
-      const quote = await quoteService.quote(params)
-      if (!quote) {
+      const params = { ...parseQuoteQuery(source), skipCache }
+      const { value, hit, ageMs } = await quoteService.quoteWithCacheOutcome(params)
+      if (!value) {
         response.status(404).json({ error: 'No route found' })
         return
       }
-      response.json(quote)
+      // so a caller can tell a reused answer from a fresh one without guessing
+      response.setHeader('X-Cache', hit ? 'HIT' : 'MISS')
+      response.setHeader('Age', String(Math.floor(ageMs / 1000)))
+      response.json(value)
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error'
       response.status(error instanceof BadRequestError ? 400 : 500).json({ error: message })
@@ -134,6 +137,19 @@ function buildProvider(config: ServerConfig, chainId: number): BaseProvider {
 
 interface QueryLike {
   [key: string]: unknown
+}
+
+/**
+ * A user pressing refresh is asking for new data, not for whatever we answered a second ago.
+ * Standard `Cache-Control: no-cache` says so; `?skipCache=true` is the same thing for clients
+ * that find setting a header awkward.
+ */
+function wantsFresh(request: Request): boolean {
+  const cacheControl = String(request.headers['cache-control'] ?? '').toLowerCase()
+  if (cacheControl.includes('no-cache') || cacheControl.includes('no-store')) return true
+
+  const source = (request.method === 'POST' ? request.body : request.query) as QueryLike | undefined
+  return source?.skipCache === true || source?.skipCache === 'true'
 }
 
 function parseQuoteQuery(query: QueryLike) {

@@ -39,6 +39,8 @@ export interface QuoteRequest {
    * Only meaningful alongside `recipient`, since it only affects the calldata.
    */
   permit?: QuotePermit
+  /** Recompute rather than reuse a recent identical quote. For an explicit user refresh. */
+  skipCache?: boolean
   routingConfig?: RoutingConfig
 }
 
@@ -95,9 +97,22 @@ export class QuoteService {
   ) {}
 
   public async quote(request: QuoteRequest): Promise<QuoteResponse | null> {
+    return (await this.quoteWithCacheOutcome(request)).value
+  }
+
+  /** As `quote`, but says whether the answer was reused, so the caller can report it */
+  public async quoteWithCacheOutcome(
+    request: QuoteRequest
+  ): Promise<{ value: QuoteResponse | null; hit: boolean; ageMs: number }> {
     // a permit is single use, so a request carrying one must never be served from cache
-    if (request.permit || !this.cache.enabled) return this.computeQuote(request)
-    return this.cache.resolve(cacheKey(request), () => this.computeQuote(request))
+    if (request.permit || !this.cache.enabled) {
+      return { value: await this.computeQuote(request), hit: false, ageMs: 0 }
+    }
+    return this.cache.resolveWithOutcome(
+      cacheKey(request),
+      () => this.computeQuote(request),
+      request.skipCache === true
+    )
   }
 
   private async computeQuote(request: QuoteRequest): Promise<QuoteResponse | null> {

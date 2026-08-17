@@ -105,3 +105,66 @@ describe('ResponseCache', () => {
     expect(recomputed).toBe(true)
   })
 })
+
+describe('explicit refresh', () => {
+  it('recomputes when the caller asks to bypass', async () => {
+    // #given a cached value
+    const cache = new ResponseCache<number>({ ttlMs: 10_000 })
+    let calls = 0
+    const compute = async (): Promise<number> => ++calls
+    await cache.resolve('a', compute)
+
+    // #when the caller explicitly wants fresh data
+    const fresh = await cache.resolve('a', compute, true)
+
+    // #then
+    expect(fresh).toEqual(2)
+  })
+
+  it('does not join a request already in flight when bypassing', async () => {
+    // #given a slow computation already running, started before the user hit refresh
+    const cache = new ResponseCache<number>({ ttlMs: 10_000 })
+    let calls = 0
+    const compute = async (): Promise<number> => {
+      const mine = ++calls
+      await tick(30)
+      return mine
+    }
+    const inFlight = cache.resolve('a', compute)
+
+    // #when
+    const refreshed = await cache.resolve('a', compute, true)
+    await inFlight
+
+    // #then the refresh got its own computation, not the older one
+    expect(refreshed).toEqual(2)
+  })
+
+  it('stores the refreshed value for everyone else', async () => {
+    const cache = new ResponseCache<number>({ ttlMs: 10_000 })
+    let calls = 0
+    const compute = async (): Promise<number> => ++calls
+
+    await cache.resolve('a', compute)
+    await cache.resolve('a', compute, true)
+    const subsequent = await cache.resolve('a', compute)
+
+    expect(subsequent).toEqual(2)
+    expect(calls).toEqual(2)
+  })
+
+  it('reports whether a value was reused, and how old it is', async () => {
+    const cache = new ResponseCache<string>({ ttlMs: 10_000 })
+
+    const first = await cache.resolveWithOutcome('a', async () => 'v')
+    await tick(25)
+    const second = await cache.resolveWithOutcome('a', async () => 'v')
+    const bypassed = await cache.resolveWithOutcome('a', async () => 'v', true)
+
+    expect(first.hit).toBe(false)
+    expect(second.hit).toBe(true)
+    expect(second.ageMs).toBeGreaterThanOrEqual(20)
+    expect(bypassed.hit).toBe(false)
+    expect(bypassed.ageMs).toEqual(0)
+  })
+})

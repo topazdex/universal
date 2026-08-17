@@ -27,7 +27,7 @@ Latency is dominated by RPC round trips, so co-locate the service with the RPC p
 | `MULTICALL_CONCURRENCY` | no | `16` | `eth_call`s in flight; lower it if the RPC rate limits you |
 | `ROUTING_BASE_TOKENS` | no | `BASE_TOKENS` | comma separated addresses the router may hop through |
 | `CORS_ORIGINS` | no | localhost:3000, app/apex/www topazdex.com | comma separated browser origins; `*` allows any |
-| `QUOTE_CACHE_TTL_MS` | no | `2000` | how long an identical quote is reused; `0` disables it |
+| `QUOTE_CACHE_TTL_MS` | no | `1000` | how long an identical quote is reused; `0` disables it |
 
 No secrets beyond the RPC URL. If your RPC key is in the URL, treat the whole variable as a secret.
 
@@ -182,9 +182,15 @@ service issues 16 of them concurrently.
 ## 6. Caching
 
 Every quote runs the whole pipeline — pool state plus ~100 swap simulations — so without a cache two
-identical requests seconds apart cost twice as much and return the same number. Responses are cached
-for `QUOTE_CACHE_TTL_MS` (2s, about two BNB Chain blocks), and identical requests already in flight
+identical requests seconds apart cost twice as much and return the same number. Responses are reused
+for `QUOTE_CACHE_TTL_MS` (1s, about one BNB Chain block), and identical requests already in flight
 are coalesced into one computation.
+
+The cache exists to collapse duplicate renders and simultaneous callers, never to withhold data from
+someone who asked for it. A request with `Cache-Control: no-cache` or `skipCache=true` recomputes,
+skipping both the cached value and any computation already in flight — joining one started a second
+ago would hand back the staleness the caller was trying to escape. Responses carry `X-Cache:
+HIT|MISS` and `Age`.
 
 Measured against public endpoints, same quote repeated:
 
@@ -192,6 +198,8 @@ Measured against public endpoints, same quote repeated:
 | --- | --- | --- | --- | --- | --- |
 | cache off | 2642ms | 1594ms | 1775ms | 1802ms | 4547ms |
 | cache on | 2151ms | 1ms | 1ms | 0ms | 5ms |
+
+(measured at a 2s TTL; the default is now 1s, so a repeat past one block recomputes)
 
 Two things are deliberately never cached: a request carrying a Permit2 signature (single use), and a
 failure (one RPC blip would otherwise be served for the whole TTL).

@@ -279,8 +279,26 @@ hour `Access-Control-Max-Age`. If you need another origin, it is one deployment 
 ## 5. Keeping quotes fresh
 
 Every quote is computed at one block (`blockNumber`) and enforces `minimumAmountOut` on chain.
-Identical requests are served from a 2 second cache, so polling faster than that is free but gains
-nothing. Two consequences:
+
+Identical requests are reused for **1 second**, roughly one BNB Chain block. That exists to collapse
+duplicate renders and simultaneous callers, not to withhold data — so **an explicit refresh always
+recomputes**:
+
+```ts
+fetch(url, { headers: { 'Cache-Control': 'no-cache' } })   // or add &skipCache=true
+```
+
+Use it when the user presses refresh, and before building the transaction they are about to sign.
+Background polling should leave it off, so ten open tabs cost one computation rather than ten.
+
+Every response says which it was:
+
+| header | meaning |
+| --- | --- |
+| `X-Cache: MISS` | computed for this request |
+| `X-Cache: HIT` | reused; `Age` gives its age in seconds |
+
+Two consequences:
 
 - **Re-quote on a timer.** Every 10-15 seconds while the swap screen is open is reasonable; BNB
   Chain produces a block every 0.75s.
