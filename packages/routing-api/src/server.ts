@@ -1,6 +1,6 @@
 import { JsonRpcProvider } from '@ethersproject/providers'
-import { TradeType } from '@topaz/sdk-core'
-import { MulticallProvider, TokenProvider, TopazRouter } from '@topaz/smart-order-router'
+import { TradeType } from '@topazdex/sdk-core'
+import { MulticallProvider, TokenProvider, TopazRouter } from '@topazdex/smart-order-router'
 import express, { Express, Request, Response } from 'express'
 
 import { BadRequestError, QuoteService } from './quote'

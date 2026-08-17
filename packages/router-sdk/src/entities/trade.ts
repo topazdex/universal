@@ -1,5 +1,5 @@
-import { Route as V2RouteSDK } from '@topaz/v2-sdk'
-import { Route as CLRouteSDK } from '@topaz/v3-sdk'
+import { Route as V2RouteSDK } from '@topazdex/v2-sdk'
+import { Route as CLRouteSDK } from '@topazdex/v3-sdk'
 import { Currency, CurrencyAmount, Fraction, Percent, Price, Token, TradeType } from '@uniswap/sdk-core'
 import invariant from 'tiny-invariant'
 

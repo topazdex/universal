@@ -1,4 +1,4 @@
-# @topaz/router-sdk
+# @topazdex/router-sdk
 
 Routes and trades that span both Topaz stacks.
 
@@ -45,4 +45,4 @@ trade.minimumAmountOut(slippage)
 
 `src/mainnet.test.ts` prices mixed routes through the live `MixedRouteQuoterV1` and requires the
 result to equal the same route priced leg by leg — the CL leg by the CL quoter, the v2 leg by
-`@topaz/v2-sdk`'s Solidly math.
+`@topazdex/v2-sdk`'s Solidly math.

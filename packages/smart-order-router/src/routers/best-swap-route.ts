@@ -1,6 +1,6 @@
 import { BigNumber } from '@ethersproject/bignumber'
-import { AnyRoute } from '@topaz/router-sdk'
-import { Currency, CurrencyAmount, TradeType } from '@topaz/sdk-core'
+import { AnyRoute } from '@topazdex/router-sdk'
+import { Currency, CurrencyAmount, TradeType } from '@topazdex/sdk-core'
 
 export interface RouteWithValidQuote {
   route: AnyRoute<Currency, Currency>

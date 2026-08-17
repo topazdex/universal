@@ -1,12 +1,13 @@
 {
-  "name": "@topaz/sdk-core",
+  "name": "@topazdex/sdk-core",
   "version": "0.1.0",
   "description": "Shared currency primitives for the Topaz stack: BNB native currency, canonical tokens, chain constants",
   "license": "GPL-3.0-or-later",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
-    "dist"
+    "dist",
+    "LICENSE"
   ],
   "sideEffects": false,
   "scripts": {
@@ -26,5 +27,8 @@
     "jest": "^29.7.0",
     "ts-jest": "^29.2.5",
     "typescript": "^5.7.2"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

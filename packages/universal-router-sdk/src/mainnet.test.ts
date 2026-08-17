@@ -7,10 +7,10 @@ import {
   RouteV2,
   Swap,
   Trade
-} from '@topaz/router-sdk'
-import { BNB, CurrencyAmount, Percent, Token, TradeType, USDC, USDT, WBNB } from '@topaz/sdk-core'
-import { Pool as V2Pool } from '@topaz/v2-sdk'
-import { CL_QUOTER_V2_ADDRESS, Pool as CLPool, SwapQuoter, TickSpacing } from '@topaz/v3-sdk'
+} from '@topazdex/router-sdk'
+import { BNB, CurrencyAmount, Percent, Token, TradeType, USDC, USDT, WBNB } from '@topazdex/sdk-core'
+import { Pool as V2Pool } from '@topazdex/v2-sdk'
+import { CL_QUOTER_V2_ADDRESS, Pool as CLPool, SwapQuoter, TickSpacing } from '@topazdex/v3-sdk'
 import { BigNumber, Contract, providers, utils, Wallet } from 'ethers'
 
 import { PERMIT2_ADDRESS } from './constants'

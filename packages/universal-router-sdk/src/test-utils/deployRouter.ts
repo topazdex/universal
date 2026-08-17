@@ -23,7 +23,7 @@ export async function deployUniversalRouter(signer: Signer): Promise<Contract> {
     artifact = JSON.parse(readFileSync(ARTIFACT_PATH, 'utf8'))
   } catch (error) {
     throw new Error(
-      `Universal Router artifact missing at ${ARTIFACT_PATH}. Run \`yarn workspace @topaz/universal-router build\` first. (${error})`
+      `Universal Router artifact missing at ${ARTIFACT_PATH}. Run \`yarn workspace @topazdex/universal-router build\` first. (${error})`
     )
   }
 

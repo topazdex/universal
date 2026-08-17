@@ -1,4 +1,4 @@
-# @topaz/sdk-core
+# @topazdex/sdk-core
 
 Shared currency primitives for the Topaz stack.
 
@@ -9,7 +9,7 @@ built in one package compares equal to the same token built in another.
 What it adds is what upstream lacks for this chain:
 
 ```ts
-import { BNB, nativeOnChain, WBNB, USDT, USDC, BASE_TOKENS, TOPAZ_CHAIN_ID } from '@topaz/sdk-core'
+import { BNB, nativeOnChain, WBNB, USDT, USDC, BASE_TOKENS, TOPAZ_CHAIN_ID } from '@topazdex/sdk-core'
 
 nativeOnChain()        // BNB, whose .wrapped is WBNB
 BASE_TOKENS            // routing hubs, ordered by the Topaz liquidity they anchor

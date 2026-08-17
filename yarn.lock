@@ -1167,14 +1167,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@topaz/router-sdk@workspace:*, @topaz/router-sdk@workspace:packages/router-sdk":
+"@topazdex/router-sdk@workspace:*, @topazdex/router-sdk@workspace:packages/router-sdk":
   version: 0.0.0-use.local
-  resolution: "@topaz/router-sdk@workspace:packages/router-sdk"
+  resolution: "@topazdex/router-sdk@workspace:packages/router-sdk"
   dependencies:
     "@ethersproject/abi": "npm:^5.7.0"
     "@ethersproject/solidity": "npm:^5.7.0"
-    "@topaz/v2-sdk": "workspace:*"
-    "@topaz/v3-sdk": "workspace:*"
+    "@topazdex/v2-sdk": "workspace:*"
+    "@topazdex/v3-sdk": "workspace:*"
     "@types/jest": "npm:^29.5.14"
     "@types/node": "npm:^22.10.2"
     "@uniswap/sdk-core": "npm:^7.19.1"
@@ -1188,17 +1188,17 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@topaz/routing-api@workspace:packages/routing-api":
+"@topazdex/routing-api@workspace:packages/routing-api":
   version: 0.0.0-use.local
-  resolution: "@topaz/routing-api@workspace:packages/routing-api"
+  resolution: "@topazdex/routing-api@workspace:packages/routing-api"
   dependencies:
     "@ethersproject/providers": "npm:^5.7.0"
-    "@topaz/router-sdk": "workspace:*"
-    "@topaz/sdk-core": "workspace:*"
-    "@topaz/smart-order-router": "workspace:*"
-    "@topaz/universal-router-sdk": "workspace:*"
-    "@topaz/v2-sdk": "workspace:*"
-    "@topaz/v3-sdk": "workspace:*"
+    "@topazdex/router-sdk": "workspace:*"
+    "@topazdex/sdk-core": "workspace:*"
+    "@topazdex/smart-order-router": "workspace:*"
+    "@topazdex/universal-router-sdk": "workspace:*"
+    "@topazdex/v2-sdk": "workspace:*"
+    "@topazdex/v3-sdk": "workspace:*"
     "@types/express": "npm:^4.17.21"
     "@types/jest": "npm:^29.5.14"
     "@types/node": "npm:^22.10.2"
@@ -1214,9 +1214,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@topaz/sdk-core@workspace:*, @topaz/sdk-core@workspace:packages/sdk-core":
+"@topazdex/sdk-core@workspace:*, @topazdex/sdk-core@workspace:packages/sdk-core":
   version: 0.0.0-use.local
-  resolution: "@topaz/sdk-core@workspace:packages/sdk-core"
+  resolution: "@topazdex/sdk-core@workspace:packages/sdk-core"
   dependencies:
     "@types/jest": "npm:^29.5.14"
     "@types/node": "npm:^22.10.2"
@@ -1229,18 +1229,18 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@topaz/smart-order-router@workspace:*, @topaz/smart-order-router@workspace:packages/smart-order-router":
+"@topazdex/smart-order-router@workspace:*, @topazdex/smart-order-router@workspace:packages/smart-order-router":
   version: 0.0.0-use.local
-  resolution: "@topaz/smart-order-router@workspace:packages/smart-order-router"
+  resolution: "@topazdex/smart-order-router@workspace:packages/smart-order-router"
   dependencies:
     "@ethersproject/abi": "npm:^5.7.0"
     "@ethersproject/bignumber": "npm:^5.7.0"
     "@ethersproject/providers": "npm:^5.7.0"
-    "@topaz/router-sdk": "workspace:*"
-    "@topaz/sdk-core": "workspace:*"
-    "@topaz/universal-router-sdk": "workspace:*"
-    "@topaz/v2-sdk": "workspace:*"
-    "@topaz/v3-sdk": "workspace:*"
+    "@topazdex/router-sdk": "workspace:*"
+    "@topazdex/sdk-core": "workspace:*"
+    "@topazdex/universal-router-sdk": "workspace:*"
+    "@topazdex/v2-sdk": "workspace:*"
+    "@topazdex/v3-sdk": "workspace:*"
     "@types/jest": "npm:^29.5.14"
     "@types/node": "npm:^22.10.2"
     "@uniswap/sdk-core": "npm:^7.19.1"
@@ -1255,16 +1255,16 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@topaz/universal-router-sdk@workspace:*, @topaz/universal-router-sdk@workspace:packages/universal-router-sdk":
+"@topazdex/universal-router-sdk@workspace:*, @topazdex/universal-router-sdk@workspace:packages/universal-router-sdk":
   version: 0.0.0-use.local
-  resolution: "@topaz/universal-router-sdk@workspace:packages/universal-router-sdk"
+  resolution: "@topazdex/universal-router-sdk@workspace:packages/universal-router-sdk"
   dependencies:
     "@ethersproject/abi": "npm:^5.7.0"
     "@ethersproject/bignumber": "npm:^5.7.0"
-    "@topaz/router-sdk": "workspace:*"
-    "@topaz/sdk-core": "workspace:*"
-    "@topaz/v2-sdk": "workspace:*"
-    "@topaz/v3-sdk": "workspace:*"
+    "@topazdex/router-sdk": "workspace:*"
+    "@topazdex/sdk-core": "workspace:*"
+    "@topazdex/v2-sdk": "workspace:*"
+    "@topazdex/v3-sdk": "workspace:*"
     "@types/jest": "npm:^29.5.14"
     "@types/node": "npm:^22.10.2"
     "@uniswap/sdk-core": "npm:^7.19.1"
@@ -1278,15 +1278,15 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@topaz/universal-router@workspace:packages/universal-router":
+"@topazdex/universal-router@workspace:packages/universal-router":
   version: 0.0.0-use.local
-  resolution: "@topaz/universal-router@workspace:packages/universal-router"
+  resolution: "@topazdex/universal-router@workspace:packages/universal-router"
   languageName: unknown
   linkType: soft
 
-"@topaz/v2-sdk@workspace:*, @topaz/v2-sdk@workspace:packages/v2-sdk":
+"@topazdex/v2-sdk@workspace:*, @topazdex/v2-sdk@workspace:packages/v2-sdk":
   version: 0.0.0-use.local
-  resolution: "@topaz/v2-sdk@workspace:packages/v2-sdk"
+  resolution: "@topazdex/v2-sdk@workspace:packages/v2-sdk"
   dependencies:
     "@ethersproject/address": "npm:^5.7.0"
     "@ethersproject/keccak256": "npm:^5.7.0"
@@ -1304,9 +1304,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@topaz/v3-sdk@workspace:*, @topaz/v3-sdk@workspace:packages/v3-sdk":
+"@topazdex/v3-sdk@workspace:*, @topazdex/v3-sdk@workspace:packages/v3-sdk":
   version: 0.0.0-use.local
-  resolution: "@topaz/v3-sdk@workspace:packages/v3-sdk"
+  resolution: "@topazdex/v3-sdk@workspace:packages/v3-sdk"
   dependencies:
     "@ethersproject/abi": "npm:^5.7.0"
     "@ethersproject/address": "npm:^5.7.0"
@@ -4610,9 +4610,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"topaz-universal@workspace:.":
+"topazdex-universal@workspace:.":
   version: 0.0.0-use.local
-  resolution: "topaz-universal@workspace:."
+  resolution: "topazdex-universal@workspace:."
   languageName: unknown
   linkType: soft
 

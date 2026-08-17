@@ -1,5 +1,5 @@
 {
-  "name": "topaz-universal",
+  "name": "topazdex-universal",
   "version": "0.1.0",
   "private": true,
   "description": "Topaz Dex routing monorepo: Universal Router, SDKs, smart order router and routing API",
@@ -15,6 +15,6 @@
     "build": "yarn workspaces foreach --all --topological-dev run build",
     "test": "yarn workspaces foreach --all run test",
     "lint": "yarn workspaces foreach --all run lint",
-    "test:router": "yarn workspace @topaz/universal-router test"
+    "test:router": "yarn workspace @topazdex/universal-router test"
   }
 }

@@ -8,14 +8,17 @@ contracts plus the TypeScript stack needed to index Topaz liquidity and route in
 
 | package | description |
 | --- | --- |
-| [`@topaz/universal-router`](packages/universal-router) | Solidity Universal Router fork, one entrypoint for swaps across both stacks |
-| [`@topaz/sdk-core`](packages/sdk-core) | BNB native currency, canonical tokens, chain constants |
-| [`@topaz/v2-sdk`](packages/v2-sdk) | Solidly pool math, volatile and stable |
-| [`@topaz/v3-sdk`](packages/v3-sdk) | Slipstream CL pool math, keyed by tick spacing |
-| [`@topaz/router-sdk`](packages/router-sdk) | mixed v2/CL routes and multi-route trades |
-| [`@topaz/universal-router-sdk`](packages/universal-router-sdk) | trade → Universal Router calldata |
-| [`@topaz/smart-order-router`](packages/smart-order-router) | pool indexing, route search, on-chain quoting, split selection |
-| [`@topaz/routing-api`](packages/routing-api) | HTTP quote service over the router |
+| [`@topazdex/universal-router`](packages/universal-router) | Solidity Universal Router fork, one entrypoint for swaps across both stacks |
+| [`@topazdex/sdk-core`](packages/sdk-core) | BNB native currency, canonical tokens, chain constants |
+| [`@topazdex/v2-sdk`](packages/v2-sdk) | Solidly pool math, volatile and stable |
+| [`@topazdex/v3-sdk`](packages/v3-sdk) | Slipstream CL pool math, keyed by tick spacing |
+| [`@topazdex/router-sdk`](packages/router-sdk) | mixed v2/CL routes and multi-route trades |
+| [`@topazdex/universal-router-sdk`](packages/universal-router-sdk) | trade → Universal Router calldata |
+| [`@topazdex/smart-order-router`](packages/smart-order-router) | pool indexing, route search, on-chain quoting, split selection |
+| [`@topazdex/routing-api`](packages/routing-api) | HTTP quote service over the router |
+
+All eight packages publish under the `@topazdex` scope on npm, except the routing API, which is a
+service rather than a library.
 
 Every package is tested against live BNB Chain mainnet state — no mocked pools, and no hardcoded
 expected amounts: quotes are checked against Topaz's own deployed `Pool.getAmountOut`, `QuoterV2`
@@ -66,7 +69,7 @@ router onto it.
 Quote something:
 
 ```bash
-UNIVERSAL_ROUTER_ADDRESS=0x… yarn workspace @topaz/routing-api start
+UNIVERSAL_ROUTER_ADDRESS=0x… yarn workspace @topazdex/routing-api start
 curl 'localhost:3000/quote?tokenIn=BNB&tokenOut=0x55d398326f99059fF775485246999027B3197955&amount=1000000000000000000'
 ```
 

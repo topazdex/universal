@@ -1,12 +1,13 @@
 {
-  "name": "@topaz/universal-router-sdk",
+  "name": "@topazdex/universal-router-sdk",
   "version": "0.1.0",
   "description": "Encodes Topaz trades into Universal Router calldata",
   "license": "GPL-3.0-or-later",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
-    "dist"
+    "dist",
+    "LICENSE"
   ],
   "sideEffects": false,
   "scripts": {
@@ -18,10 +19,10 @@
   "dependencies": {
     "@ethersproject/abi": "^5.7.0",
     "@ethersproject/bignumber": "^5.7.0",
-    "@topaz/router-sdk": "workspace:*",
-    "@topaz/sdk-core": "workspace:*",
-    "@topaz/v2-sdk": "workspace:*",
-    "@topaz/v3-sdk": "workspace:*",
+    "@topazdex/router-sdk": "workspace:*",
+    "@topazdex/sdk-core": "workspace:*",
+    "@topazdex/v2-sdk": "workspace:*",
+    "@topazdex/v3-sdk": "workspace:*",
     "@uniswap/sdk-core": "^7.19.1",
     "jsbi": "^3.2.5",
     "tiny-invariant": "^1.3.3"
@@ -41,5 +42,8 @@
       "default": "./dist/index.js"
     },
     "./dist/test-utils/*": "./dist/test-utils/*.js"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

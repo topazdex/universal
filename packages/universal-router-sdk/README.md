@@ -1,9 +1,9 @@
-# @topaz/universal-router-sdk
+# @topazdex/universal-router-sdk
 
-Turns a `@topaz/router-sdk` trade into Universal Router calldata.
+Turns a `@topazdex/router-sdk` trade into Universal Router calldata.
 
 ```ts
-import { SwapRouter } from '@topaz/universal-router-sdk'
+import { SwapRouter } from '@topazdex/universal-router-sdk'
 
 const { calldata, value } = SwapRouter.swapCallParameters(trade, {
   slippageTolerance: new Percent(50, 10_000),

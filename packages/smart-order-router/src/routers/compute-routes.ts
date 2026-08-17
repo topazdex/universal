@@ -1,7 +1,7 @@
-import { isCLPool, MixedRoute, RouteCL, RouteMixed, RouteV2, TPool } from '@topaz/router-sdk'
-import { Currency, Token } from '@topaz/sdk-core'
-import { Pool as V2Pool } from '@topaz/v2-sdk'
-import { Pool as CLPool, Route as CLRoute } from '@topaz/v3-sdk'
+import { isCLPool, MixedRoute, RouteCL, RouteMixed, RouteV2, TPool } from '@topazdex/router-sdk'
+import { Currency, Token } from '@topazdex/sdk-core'
+import { Pool as V2Pool } from '@topazdex/v2-sdk'
+import { Pool as CLPool, Route as CLRoute } from '@topazdex/v3-sdk'
 
 export interface ComputedRoutes {
   v2Routes: RouteV2<Currency, Currency>[]

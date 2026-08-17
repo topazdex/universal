@@ -1,5 +1,5 @@
 {
-  "name": "@topaz/routing-api",
+  "name": "@topazdex/routing-api",
   "version": "0.1.0",
   "description": "HTTP quote service over the Topaz smart order router",
   "license": "GPL-3.0-or-later",
@@ -15,12 +15,12 @@
   },
   "dependencies": {
     "@ethersproject/providers": "^5.7.0",
-    "@topaz/router-sdk": "workspace:*",
-    "@topaz/sdk-core": "workspace:*",
-    "@topaz/smart-order-router": "workspace:*",
-    "@topaz/universal-router-sdk": "workspace:*",
-    "@topaz/v2-sdk": "workspace:*",
-    "@topaz/v3-sdk": "workspace:*",
+    "@topazdex/router-sdk": "workspace:*",
+    "@topazdex/sdk-core": "workspace:*",
+    "@topazdex/smart-order-router": "workspace:*",
+    "@topazdex/universal-router-sdk": "workspace:*",
+    "@topazdex/v2-sdk": "workspace:*",
+    "@topazdex/v3-sdk": "workspace:*",
     "express": "^4.21.2"
   },
   "devDependencies": {
@@ -35,5 +35,6 @@
     "ts-jest": "^29.2.5",
     "ts-node": "^10.9.2",
     "typescript": "^5.7.2"
-  }
+  },
+  "private": true
 }

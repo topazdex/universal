@@ -1,6 +1,6 @@
-import { Protocol } from '@topaz/router-sdk'
-import { BNB, CurrencyAmount, Percent, TradeType, USDC, USDT, WBNB } from '@topaz/sdk-core'
-import { CL_QUOTER_V2_ADDRESS, Pool as CLPool, Route as CLRoute, SwapQuoter, TickSpacing } from '@topaz/v3-sdk'
+import { Protocol } from '@topazdex/router-sdk'
+import { BNB, CurrencyAmount, Percent, TradeType, USDC, USDT, WBNB } from '@topazdex/sdk-core'
+import { CL_QUOTER_V2_ADDRESS, Pool as CLPool, Route as CLRoute, SwapQuoter, TickSpacing } from '@topazdex/v3-sdk'
 import { BigNumber, Contract, providers, Wallet } from 'ethers'
 
 import { TopazRouter } from './routers/topaz-router'
@@ -40,9 +40,9 @@ describeIfRpc('smart order router against live Topaz liquidity', () => {
 
   beforeAll(async () => {
     const { startAnvilFork, pickPort, createFundedWallet } = await import(
-      '@topaz/universal-router-sdk/dist/test-utils/anvil'
+      '@topazdex/universal-router-sdk/dist/test-utils/anvil'
     )
-    const { deployUniversalRouter } = await import('@topaz/universal-router-sdk/dist/test-utils/deployRouter')
+    const { deployUniversalRouter } = await import('@topazdex/universal-router-sdk/dist/test-utils/deployRouter')
 
     anvil = await startAnvilFork({ rpcUrl: RPC as string, blockNumber: FORK_BLOCK, port: pickPort(500) })
     provider = anvil.provider

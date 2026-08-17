@@ -82,7 +82,7 @@ router, and each run but the first spends the router's balance.
 - **Deployment.** The router has a deploy script (`script/deployParameters/DeployBscMainnet.s.sol`)
   that cross-checks the clone implementations against the live factories before broadcasting, but it
   has not been run against mainnet. Once it is, record the address in
-  `UNIVERSAL_ROUTER_ADDRESSES` in `@topaz/universal-router-sdk`.
+  `UNIVERSAL_ROUTER_ADDRESSES` in `@topazdex/universal-router-sdk`.
 - **Caching and rate limiting in the API.** Every quote re-reads pool state. A pool-state cache
   keyed by block, and a subgraph refresh loop, are the obvious next step for production traffic.
 - **Position management in `v3-sdk`.** `NonfungiblePositionManager`, `Position` and staker helpers

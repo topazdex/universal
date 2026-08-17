@@ -1,4 +1,4 @@
-# @topaz/universal-router
+# @topazdex/universal-router
 
 Topaz Dex fork of the Universal Router. One entrypoint that batches swaps, wrapping, Permit2 pulls
 and fee payments across both Topaz stacks:

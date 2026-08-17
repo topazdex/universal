@@ -1,6 +1,6 @@
-# @topaz/routing-api
+# @topazdex/routing-api
 
-HTTP quote service over [`@topaz/smart-order-router`](../smart-order-router). Given a pair and an
+HTTP quote service over [`@topazdex/smart-order-router`](../smart-order-router). Given a pair and an
 amount it returns the best route across Topaz CL and Topaz v2 pools, and — when a recipient is
 supplied — the Universal Router calldata that executes it.
 
@@ -10,8 +10,8 @@ supplied — the Universal Router calldata that executes it.
 export BSC_MAINNET_RPC=https://…            # archive not required, but an unthrottled node helps
 export UNIVERSAL_ROUTER_ADDRESS=0x…         # required only to return calldata
 export PORT=3000
-yarn workspace @topaz/routing-api build
-yarn workspace @topaz/routing-api start
+yarn workspace @topazdex/routing-api build
+yarn workspace @topazdex/routing-api start
 ```
 
 ## `GET /quote`
@@ -75,5 +75,5 @@ otherwise.
 deployed, and executes the calldata the API hands back.
 
 ```bash
-yarn workspace @topaz/routing-api test
+yarn workspace @topazdex/routing-api test
 ```

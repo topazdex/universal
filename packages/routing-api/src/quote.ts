@@ -1,8 +1,8 @@
-import { isCLPool, Protocol } from '@topaz/router-sdk'
-import { BNB, Currency, CurrencyAmount, Percent, Token, TradeType } from '@topaz/sdk-core'
-import { RoutingConfig, SwapRoute, TokenProvider, TopazRouter } from '@topaz/smart-order-router'
-import { Pool as V2Pool } from '@topaz/v2-sdk'
-import { Pool as CLPool } from '@topaz/v3-sdk'
+import { isCLPool, Protocol } from '@topazdex/router-sdk'
+import { BNB, Currency, CurrencyAmount, Percent, Token, TradeType } from '@topazdex/sdk-core'
+import { RoutingConfig, SwapRoute, TokenProvider, TopazRouter } from '@topazdex/smart-order-router'
+import { Pool as V2Pool } from '@topazdex/v2-sdk'
+import { Pool as CLPool } from '@topazdex/v3-sdk'
 
 export const NATIVE_ALIASES = new Set(['bnb', 'native', '0x0000000000000000000000000000000000000000'])
 

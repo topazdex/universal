@@ -1,5 +1,5 @@
-import { Pool as CLPool } from '@topaz/v3-sdk'
-import { Pool as V2Pool } from '@topaz/v2-sdk'
+import { Pool as CLPool } from '@topazdex/v3-sdk'
+import { Pool as V2Pool } from '@topazdex/v2-sdk'
 
 /** The Topaz liquidity stacks a route can touch */
 export enum Protocol {

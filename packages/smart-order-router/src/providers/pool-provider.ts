@@ -1,7 +1,7 @@
 import { Interface } from '@ethersproject/abi'
-import { CurrencyAmount, Token } from '@topaz/sdk-core'
-import { Pool as V2Pool } from '@topaz/v2-sdk'
-import { Pool as CLPool } from '@topaz/v3-sdk'
+import { CurrencyAmount, Token } from '@topazdex/sdk-core'
+import { Pool as V2Pool } from '@topazdex/v2-sdk'
+import { Pool as CLPool } from '@topazdex/v3-sdk'
 
 import { CL_FACTORY_ADDRESS, POOL_FACTORY_ADDRESS } from '../constants'
 import { MulticallProvider } from './multicall'

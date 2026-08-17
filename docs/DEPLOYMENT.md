@@ -90,7 +90,7 @@ Re-run the fork suites against the real deployment by pointing the tests at it, 
 end to end:
 
 ```bash
-UNIVERSAL_ROUTER_ADDRESS=0x… yarn workspace @topaz/routing-api start
+UNIVERSAL_ROUTER_ADDRESS=0x… yarn workspace @topazdex/routing-api start
 curl 'localhost:3000/quote?tokenIn=BNB&tokenOut=0x55d398326f99059fF775485246999027B3197955&amount=100000000000000000&recipient=0x…'
 ```
 

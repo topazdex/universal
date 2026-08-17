@@ -1,5 +1,5 @@
-import { Pool as V2Pool } from '@topaz/v2-sdk'
-import { Pool as CLPool, TickSpacing } from '@topaz/v3-sdk'
+import { Pool as V2Pool } from '@topazdex/v2-sdk'
+import { Pool as CLPool, TickSpacing } from '@topazdex/v3-sdk'
 import { CurrencyAmount, Token } from '@uniswap/sdk-core'
 import { Contract, providers } from 'ethers'
 

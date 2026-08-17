@@ -10,9 +10,9 @@ import {
   Swap,
   TPool,
   Trade
-} from '@topaz/router-sdk'
-import { Pool as V2Pool } from '@topaz/v2-sdk'
-import { encodeRouteToPath, Pool as CLPool, Route as CLRoute } from '@topaz/v3-sdk'
+} from '@topazdex/router-sdk'
+import { Pool as V2Pool } from '@topazdex/v2-sdk'
+import { encodeRouteToPath, Pool as CLPool, Route as CLRoute } from '@topazdex/v3-sdk'
 import { Currency, CurrencyAmount, Percent, Token, TradeType } from '@uniswap/sdk-core'
 import invariant from 'tiny-invariant'
 

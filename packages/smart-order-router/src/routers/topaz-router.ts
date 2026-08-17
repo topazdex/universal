@@ -1,8 +1,8 @@
 import { BigNumber } from '@ethersproject/bignumber'
 import { BaseProvider } from '@ethersproject/providers'
-import { AnyRoute, Swap, TPool, Trade } from '@topaz/router-sdk'
-import { BASE_TOKENS, Currency, CurrencyAmount, Token, TradeType } from '@topaz/sdk-core'
-import { SwapOptions, SwapRouter, universalRouterAddress } from '@topaz/universal-router-sdk'
+import { AnyRoute, Swap, TPool, Trade } from '@topazdex/router-sdk'
+import { BASE_TOKENS, Currency, CurrencyAmount, Token, TradeType } from '@topazdex/sdk-core'
+import { SwapOptions, SwapRouter, universalRouterAddress } from '@topazdex/universal-router-sdk'
 
 import { TOPAZ_CHAIN_ID } from '../constants'
 import { MulticallProvider } from '../providers/multicall'

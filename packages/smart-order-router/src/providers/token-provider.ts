@@ -1,5 +1,5 @@
 import { Interface } from '@ethersproject/abi'
-import { BASE_TOKENS, Token } from '@topaz/sdk-core'
+import { BASE_TOKENS, Token } from '@topazdex/sdk-core'
 
 import { TOPAZ_CHAIN_ID } from '../constants'
 import { MulticallProvider } from './multicall'

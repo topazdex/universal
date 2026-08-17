@@ -6,10 +6,10 @@ import {
   MixedRoute,
   MixedRouteQuoter,
   Protocol
-} from '@topaz/router-sdk'
-import { Currency, CurrencyAmount, TradeType } from '@topaz/sdk-core'
-import { Pool as V2Pool } from '@topaz/v2-sdk'
-import { Route as CLRoute, SwapQuoter } from '@topaz/v3-sdk'
+} from '@topazdex/router-sdk'
+import { Currency, CurrencyAmount, TradeType } from '@topazdex/sdk-core'
+import { Pool as V2Pool } from '@topazdex/v2-sdk'
+import { Route as CLRoute, SwapQuoter } from '@topazdex/v3-sdk'
 
 import { MIXED_ROUTE_QUOTER_V1_ADDRESS, QUOTER_V2_ADDRESS } from '../constants'
 import { MulticallProvider } from './multicall'

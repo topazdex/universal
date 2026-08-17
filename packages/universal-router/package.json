@@ -1,11 +1,13 @@
 {
-  "name": "@topaz/universal-router",
+  "name": "@topazdex/universal-router",
   "version": "0.1.0",
   "description": "Topaz Dex Universal Router: one entrypoint for swaps across Topaz v2 (Solidly) and Topaz CL (Slipstream) pools",
   "license": "GPL-3.0-or-later",
   "files": [
     "contracts",
-    "out/UniversalRouter.sol/UniversalRouter.json"
+    "out/UniversalRouter.sol/UniversalRouter.json",
+    "LICENSE",
+    "!lib/**"
   ],
   "scripts": {
     "build": "forge build",
@@ -14,5 +16,8 @@
     "lint": "forge fmt --check",
     "lint:fix": "forge fmt",
     "deploy:bsc": "forge script script/deployParameters/DeployBscMainnet.s.sol:DeployBscMainnet --rpc-url bsc --broadcast --verify"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

@@ -1,4 +1,4 @@
-# @topaz/v3-sdk
+# @topazdex/v3-sdk
 
 Topaz CL pools — Slipstream concentrated liquidity. Forked from `@uniswap/v3-sdk`; the tick, swap
 and price math is upstream's, the pool identity is Topaz's.
@@ -16,7 +16,7 @@ and price math is upstream's, the pool identity is Topaz's.
 So a `Pool` takes both a fee and a tick spacing, and `Pool.getAddress` needs no init code hash:
 
 ```ts
-import { Pool, TickSpacing } from '@topaz/v3-sdk'
+import { Pool, TickSpacing } from '@topazdex/v3-sdk'
 
 const pool = new Pool(WBNB, USDT, /* fee, pips */ 500, TickSpacing.LOW, sqrtPriceX96, liquidity, tick)
 Pool.getAddress(WBNB, USDT, TickSpacing.LOW)

@@ -1,12 +1,13 @@
 {
-  "name": "@topaz/smart-order-router",
+  "name": "@topazdex/smart-order-router",
   "version": "0.1.0",
   "description": "Indexes Topaz v2 and CL liquidity and finds the best route between them",
   "license": "GPL-3.0-or-later",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
-    "dist"
+    "dist",
+    "LICENSE"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
@@ -18,11 +19,11 @@
     "@ethersproject/abi": "^5.7.0",
     "@ethersproject/bignumber": "^5.7.0",
     "@ethersproject/providers": "^5.7.0",
-    "@topaz/router-sdk": "workspace:*",
-    "@topaz/sdk-core": "workspace:*",
-    "@topaz/universal-router-sdk": "workspace:*",
-    "@topaz/v2-sdk": "workspace:*",
-    "@topaz/v3-sdk": "workspace:*",
+    "@topazdex/router-sdk": "workspace:*",
+    "@topazdex/sdk-core": "workspace:*",
+    "@topazdex/universal-router-sdk": "workspace:*",
+    "@topazdex/v2-sdk": "workspace:*",
+    "@topazdex/v3-sdk": "workspace:*",
     "@uniswap/sdk-core": "^7.19.1",
     "cross-fetch": "^4.1.0",
     "jsbi": "^3.2.5",
@@ -36,5 +37,8 @@
     "jest": "^29.7.0",
     "ts-jest": "^29.2.5",
     "typescript": "^5.7.2"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

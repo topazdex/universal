@@ -1,4 +1,4 @@
-# @topaz/v2-sdk
+# @topazdex/v2-sdk
 
 Topaz v2 pools: Solidly-style volatile (`xy = k`) and stable (`x³y + xy³ = k`) AMMs.
 
@@ -19,8 +19,8 @@ Newton iteration in `_get_y` — so a quote equals what the pool returns, to the
 ## Usage
 
 ```ts
-import { CurrencyAmount } from '@topaz/sdk-core'
-import { Pool, Route, Trade } from '@topaz/v2-sdk'
+import { CurrencyAmount } from '@topazdex/sdk-core'
+import { Pool, Route, Trade } from '@topazdex/v2-sdk'
 
 const pool = Pool.fromReserves(WBNB, USDT, reserve0, reserve1, /* stable */ false, /* fee bips */ 30)
 const [amountOut] = pool.getOutputAmount(CurrencyAmount.fromRawAmount(WBNB, '1000000000000000000'))

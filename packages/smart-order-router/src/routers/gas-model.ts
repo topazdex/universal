@@ -1,6 +1,6 @@
 import { BigNumber } from '@ethersproject/bignumber'
-import { AnyRoute, isCLPool, TPool } from '@topaz/router-sdk'
-import { Currency, CurrencyAmount, Price, Token, WBNB } from '@topaz/sdk-core'
+import { AnyRoute, isCLPool, TPool } from '@topazdex/router-sdk'
+import { Currency, CurrencyAmount, Price, Token, WBNB } from '@topazdex/sdk-core'
 
 import { BASE_SWAP_GAS, CL_HOP_GAS, CL_TICK_CROSS_GAS, V2_HOP_GAS } from '../constants'
 

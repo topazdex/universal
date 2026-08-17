@@ -1,4 +1,4 @@
-# @topaz/smart-order-router
+# @topazdex/smart-order-router
 
 Finds the best way to trade between two currencies across both Topaz stacks, and hands back
 Universal Router calldata that executes it.
@@ -35,8 +35,8 @@ subgraphs ─► candidate pools ─► live pool state ─► route enumeration
 
 ```ts
 import { JsonRpcProvider } from '@ethersproject/providers'
-import { CurrencyAmount, Percent, TradeType, USDT, BNB } from '@topaz/sdk-core'
-import { TopazRouter } from '@topaz/smart-order-router'
+import { CurrencyAmount, Percent, TradeType, USDT, BNB } from '@topazdex/sdk-core'
+import { TopazRouter } from '@topazdex/smart-order-router'
 
 const router = new TopazRouter({
   provider: new JsonRpcProvider(process.env.BSC_MAINNET_RPC, 56),
@@ -75,5 +75,5 @@ these two knobs dominate latency. Raise `distributionPercent` to 25 for a fast a
 router's own calldata and checks the received amount lands within a basis point of the quote.
 
 ```bash
-yarn workspace @topaz/smart-order-router test
+yarn workspace @topazdex/smart-order-router test
 ```
