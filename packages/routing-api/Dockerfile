@@ -13,11 +13,21 @@ COPY packages/router-sdk/package.json packages/router-sdk/
 COPY packages/universal-router-sdk/package.json packages/universal-router-sdk/
 COPY packages/smart-order-router/package.json packages/smart-order-router/
 COPY packages/routing-api/package.json packages/routing-api/
+# the router package has no npm dependencies, but omitting it changes the workspace set and
+# `--immutable` then refuses the lockfile
+COPY packages/universal-router/package.json packages/universal-router/
 RUN yarn install --immutable
 
 COPY packages/ packages/
-# the router package is Solidity only; the API never imports it
-RUN yarn workspaces foreach --all --topological-dev --exclude @topazdex/universal-router run build
+# built explicitly in dependency order: the router package is Solidity only, and its build script
+# shells out to forge, which is not in this image
+RUN yarn workspace @topazdex/sdk-core build \
+ && yarn workspace @topazdex/v2-sdk build \
+ && yarn workspace @topazdex/v3-sdk build \
+ && yarn workspace @topazdex/router-sdk build \
+ && yarn workspace @topazdex/universal-router-sdk build \
+ && yarn workspace @topazdex/smart-order-router build \
+ && yarn workspace @topazdex/routing-api build
 
 FROM node:22-slim AS runtime
 WORKDIR /app
