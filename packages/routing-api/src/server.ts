@@ -21,6 +21,8 @@ export interface ServerConfig {
   multicallBatchSize?: number
   /** eth_calls in flight at once. Lower it if the RPC rate limits you. */
   multicallConcurrency?: number
+  /** Token addresses the router may hop through, overriding the defaults */
+  baseTokens?: string[]
 }
 
 export function createApp(config: ServerConfig): Express {
@@ -37,7 +39,7 @@ export function createApp(config: ServerConfig): Express {
     multicallProvider: multicall,
     universalRouterAddress: config.universalRouterAddress
   })
-  const quoteService = new QuoteService(router, tokenProvider, chainId)
+  const quoteService = new QuoteService(router, tokenProvider, chainId, config.baseTokens)
 
   const app = express()
   app.use(express.json())
@@ -142,7 +144,11 @@ if (require.main === module) {
     chainId: process.env.CHAIN_ID ? Number(process.env.CHAIN_ID) : undefined,
     universalRouterAddress: process.env.UNIVERSAL_ROUTER_ADDRESS,
     multicallBatchSize: process.env.MULTICALL_BATCH_SIZE ? Number(process.env.MULTICALL_BATCH_SIZE) : undefined,
-    multicallConcurrency: process.env.MULTICALL_CONCURRENCY ? Number(process.env.MULTICALL_CONCURRENCY) : undefined
+    multicallConcurrency: process.env.MULTICALL_CONCURRENCY ? Number(process.env.MULTICALL_CONCURRENCY) : undefined,
+    baseTokens: (process.env.ROUTING_BASE_TOKENS ?? '')
+      .split(',')
+      .map(address => address.trim())
+      .filter(Boolean)
   })
 
   app.listen(port, () => {

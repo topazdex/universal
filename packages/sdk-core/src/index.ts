@@ -50,9 +50,19 @@ export const USDT = new Token(TOPAZ_CHAIN_ID, '0x55d398326f99059fF77548524699902
 export const USDC = new Token(TOPAZ_CHAIN_ID, '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d', 18, 'USDC', 'USD Coin')
 export const BTCB = new Token(TOPAZ_CHAIN_ID, '0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c', 18, 'BTCB', 'Bitcoin BEP20')
 export const WETH = new Token(TOPAZ_CHAIN_ID, '0x2170Ed0880ac9A755fd29B2688956BD959F933F8', 18, 'ETH', 'Ethereum Token')
+export const SOL = new Token(TOPAZ_CHAIN_ID, '0x570A5D26f7765Ecb712C0924E4De545B89fD43dF', 18, 'SOL', 'Solana')
+export const USD1 = new Token(TOPAZ_CHAIN_ID, '0x8d0D000Ee44948FC98c9B98A4FA4921476f08B0d', 18, 'USD1', 'World Liberty USD1')
+export const XRP = new Token(TOPAZ_CHAIN_ID, '0x1D2F0da169ceB9fC7B3144628dB156f3F6c60dBE', 18, 'XRP', 'XRP Token')
+export const BOOK = new Token(TOPAZ_CHAIN_ID, '0xC9Ad421f96579AcE066eC188a7Bba472fB83017F', 18, 'BOOK', 'Book of Meme')
 
 /**
- * Default intermediate tokens the router hops through when no direct pool exists.
- * Ordered by how much Topaz liquidity they anchor.
+ * Tokens the router always considers hopping through, ordered by the Topaz liquidity they anchor.
+ *
+ * A token earns a place here by connecting pairs, not by being popular: it needs live pools with
+ * more than one counterparty, otherwise it can only ever be an endpoint. Tokens outside this list
+ * are still reachable — the router adds the counterparties of the deepest pools holding either side
+ * of the trade, so a long-tail token is picked up dynamically when it is actually relevant.
+ *
+ * Adding a token with no Topaz pools is harmless but pointless: it contributes no routes.
  */
-export const BASE_TOKENS: Token[] = [WBNB, USDT, USDC, BTCB, WETH, TOPAZ]
+export const BASE_TOKENS: Token[] = [WBNB, USDT, USDC, SOL, WETH, BTCB, USD1, TOPAZ, XRP, BOOK]

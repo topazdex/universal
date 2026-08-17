@@ -25,6 +25,7 @@ Latency is dominated by RPC round trips, so co-locate the service with the RPC p
 | `UNIVERSAL_ROUTER_ADDRESS` | no | recorded deployment | overrides the address used for calldata |
 | `MULTICALL_BATCH_SIZE` | no | `15` | quote calls per `eth_call`; see the tuning section before changing it |
 | `MULTICALL_CONCURRENCY` | no | `16` | `eth_call`s in flight; lower it if the RPC rate limits you |
+| `ROUTING_BASE_TOKENS` | no | `BASE_TOKENS` | comma separated addresses the router may hop through |
 
 No secrets beyond the RPC URL. If your RPC key is in the URL, treat the whole variable as a secret.
 
@@ -230,6 +231,24 @@ BNB → TOPAZ, which sets how much quoting there is to do:
 Hop depth dominates: each extra hop multiplies routes by roughly 4x. Each extra intermediary adds
 about 5 routes at 3 hops, and stops mattering once the token has no more pools to reach — the 10 and
 12 rows are identical because the last two tokens added no new pools.
+
+### Where the intermediary list lives
+
+Three places, in order of how permanent the change is:
+
+1. `BASE_TOKENS` in [`packages/sdk-core/src/index.ts`](../packages/sdk-core/src/index.ts) — the default.
+2. `ROUTING_BASE_TOKENS` — a comma separated list of addresses, overrides the default per deployment.
+3. `baseTokens` on `RoutingConfig` — per call, for programmatic use.
+
+A token earns a place by *connecting* pairs, not by being popular: it needs live pools with more
+than one counterparty, otherwise it can only ever be an endpoint. Tokens outside the list are still
+reachable — the router adds the counterparties of the deepest pools holding either side of the
+trade, so a long-tail token is picked up when it is actually relevant.
+
+That auto-discovery is why widening the list changes less than you would expect. Measured on ten
+pairs, including spoke-to-spoke ones like SOL → XRP and BOOK → TOPAZ, going from 6 hubs to 10
+returned **identical quotes** for +0 to +7 `eth_call`s. The list matters as Topaz liquidity grows a
+denser middle; today most paths run through WBNB or USDT regardless.
 
 **Adding intermediaries is cheap now.** Routes are screened before the expensive pass (see below),
 so an extra intermediary costs about 2 quote calls per route it adds, not 20. Going from 6 to 10

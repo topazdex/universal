@@ -29,6 +29,8 @@ export interface RoutingConfig {
   blockNumber?: number
   /** Skip the subgraph and route over exactly these pools */
   poolsOverride?: TPool[]
+  /** Tokens the router may hop through, overriding BASE_TOKENS */
+  baseTokens?: Token[]
 }
 
 export interface SwapRoute {
@@ -223,7 +225,7 @@ export class TopazRouter {
       this.subgraphCache = { v2, cl, fetchedAt: Date.now() }
     }
 
-    const allowed = allowedTokenSet(currencyIn, currencyOut, this.subgraphCache)
+    const allowed = allowedTokenSet(currencyIn, currencyOut, this.subgraphCache, config.baseTokens)
     const v2Candidates = this.subgraphCache.v2.filter(
       pool => allowed.has(pool.token0.id.toLowerCase()) && allowed.has(pool.token1.id.toLowerCase())
     )
@@ -249,13 +251,14 @@ function allowedTokenSet(
   currencyIn: Currency,
   currencyOut: Currency,
   subgraph: { v2: V2SubgraphPool[]; cl: CLSubgraphPool[] },
+  baseTokens: Token[] = BASE_TOKENS,
   topPoolsPerToken = 5
 ): Set<string> {
   const tokenIn = currencyIn.wrapped.address.toLowerCase()
   const tokenOut = currencyOut.wrapped.address.toLowerCase()
 
   const allowed = new Set<string>([tokenIn, tokenOut])
-  for (const token of BASE_TOKENS) allowed.add(token.address.toLowerCase())
+  for (const token of baseTokens) allowed.add(token.address.toLowerCase())
 
   const addCounterparties = (pools: { token0: { id: string }; token1: { id: string } }[], token: string) => {
     let added = 0

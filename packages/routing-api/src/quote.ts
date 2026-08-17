@@ -59,10 +59,14 @@ export interface QuoteResponse {
 }
 
 export class QuoteService {
+  private baseTokens: Promise<Token[]> | undefined
+
   public constructor(
     private readonly router: TopazRouter,
     private readonly tokenProvider: TokenProvider,
-    private readonly chainId: number
+    private readonly chainId: number,
+    /** Overrides the default routing hubs; resolved on first use */
+    private readonly baseTokenAddresses?: string[]
   ) {}
 
   public async quote(request: QuoteRequest): Promise<QuoteResponse | null> {
@@ -85,14 +89,21 @@ export class QuoteService {
         }
       : undefined
 
-    const route = await this.router.route(
-      amount,
-      quoteCurrency,
-      request.tradeType,
-      swapOptions,
-      request.routingConfig
-    )
+    const baseTokens = await this.resolveBaseTokens()
+    const route = await this.router.route(amount, quoteCurrency, request.tradeType, swapOptions, {
+      ...request.routingConfig,
+      ...(baseTokens ? { baseTokens } : {})
+    })
     return route ? serialize(route, request.tradeType, amount) : null
+  }
+
+  private async resolveBaseTokens(): Promise<Token[] | undefined> {
+    if (!this.baseTokenAddresses?.length) return undefined
+    // resolved once and reused: decimals require a chain read
+    this.baseTokens ??= this.tokenProvider
+      .getTokens(this.baseTokenAddresses as string[])
+      .then(resolved => [...resolved.values()])
+    return this.baseTokens
   }
 
   private async resolveCurrency(identifier: string): Promise<Currency> {
