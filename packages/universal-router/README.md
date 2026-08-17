@@ -91,8 +91,15 @@ forge test
 
 ```bash
 PRIVATE_KEY=0x… forge script script/deployParameters/DeployBscMainnet.s.sol:DeployBscMainnet \
-  --rpc-url bsc --broadcast --verify
+  --rpc-url bsc --broadcast
+
+# verification needs its own step, see docs/DEPLOYMENT.md for why --verify cannot work here
+ETHERSCAN_API_KEY=… python3 script/verify-bscscan.py 0xDeployedAddress
 ```
+
+Deployed on BNB Chain mainnet at
+[`0x691e6171e0a434FfE5C9f1759621D05b9efcF6A6`](https://bscscan.com/address/0x691e6171e0a434FfE5C9f1759621D05b9efcF6A6),
+verified, and byte-for-byte identical to this source (`DeployedRouterForkTest`).
 
 The script reverts before broadcasting if `PoolFactory.implementation()` or `CLFactory.poolImplementation()`
 no longer match the configured constants, since a stale implementation would silently derive pool addresses

@@ -69,6 +69,15 @@ otherwise.
 { "status": "ok", "chainId": 56 }
 ```
 
+## Deploying
+
+See [docs/ROUTING_API_DEPLOYMENT.md](../../docs/ROUTING_API_DEPLOYMENT.md). There is a Dockerfile in
+this package; build it from the repo root, since it needs the whole workspace as context.
+
+```bash
+docker build -f packages/routing-api/Dockerfile -t topazdex/routing-api .
+```
+
 ## Tests
 
 `src/server.test.ts` runs the service against an anvil fork of BNB Chain with the Universal Router

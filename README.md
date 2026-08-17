@@ -76,4 +76,5 @@ curl 'localhost:3000/quote?tokenIn=BNB&tokenOut=0x55d398326f99059fF7754852469990
 ## Docs
 
 - [Architecture](docs/ARCHITECTURE.md) — why each package exists, what was forked from where, and how each layer is verified
-- [Deployment](docs/DEPLOYMENT.md) — deploying the Universal Router and wiring the address through the stack
+- [Router deployment](docs/DEPLOYMENT.md) — deploying and verifying the Universal Router
+- [Routing API deployment](docs/ROUTING_API_DEPLOYMENT.md) — running the quote service in production

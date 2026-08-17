@@ -1,8 +1,8 @@
 # Deploying the Universal Router
 
-| chain | address | verified against this source |
+| chain | address | source verified |
 | --- | --- | --- |
-| BNB Chain mainnet (56) | [`0x691e6171e0a434FfE5C9f1759621D05b9efcF6A6`](https://bscscan.com/address/0x691e6171e0a434FfE5C9f1759621D05b9efcF6A6) | `DeployedRouterForkTest`, byte for byte |
+| BNB Chain mainnet (56) | [`0x691e6171e0a434FfE5C9f1759621D05b9efcF6A6`](https://bscscan.com/address/0x691e6171e0a434FfE5C9f1759621D05b9efcF6A6) | BscScan ✓, plus `DeployedRouterForkTest` byte for byte |
 
 To re-verify a deployment, or to run the whole behavioural suite against the live contract rather
 than one deployed into the fork:
@@ -35,13 +35,13 @@ forge test --match-contract PoolAddressesForkTest -vv
 
 ```bash
 cd packages/universal-router
-PRIVATE_KEY=0x… ETHERSCAN_API_KEY=… forge script \
+PRIVATE_KEY=0x… forge script \
   script/deployParameters/DeployBscMainnet.s.sol:DeployBscMainnet \
-  --rpc-url bsc --broadcast --verify
+  --rpc-url bsc --broadcast
 ```
 
-Verification goes through the unified Etherscan V2 endpoint — one key covers BSC — since BscScan's
-standalone V1 API is retired.
+Do not pass `--verify`: it fails for this project for the reason explained in step 3. Verify
+afterwards with the script there.
 
 The address is written to `deployment-addresses/bsc.json`.
 
@@ -59,7 +59,33 @@ Constructor parameters, all immutable afterwards:
 The router holds no funds, has no owner and no upgrade path. Redeploying is the only way to change a
 parameter, which is why the factories are cross-checked first.
 
-## 3. Record the address
+## 3. Verify on BscScan
+
+**`forge verify-contract` does not work for this project.** Use:
+
+```bash
+cd packages/universal-router
+ETHERSCAN_API_KEY=… python3 script/verify-bscscan.py 0x691e6171e0a434FfE5C9f1759621D05b9efcF6A6
+```
+
+Why the standard tooling fails here is worth understanding, because it will recur on every deploy:
+
+- The project builds with `via_ir = true`, and under via-IR a contract's bytecode depends on the
+  **whole compilation unit**, not only the files reachable from it.
+- Foundry compiles the entire project — contracts, tests and scripts — in one solc invocation, 60
+  sources for this package.
+- `forge verify-contract --show-standard-json-input` emits only the 27 sources reachable from
+  `UniversalRouter.sol`. Those compile to bytecode 392 bytes shorter than what was deployed, so
+  Etherscan correctly rejects it with *"Compiled contract deployment bytecode does NOT match the
+  transaction deployment bytecode"*.
+
+`script/verify-bscscan.py` sidesteps this by capturing the exact JSON foundry hands solc — it runs
+`forge build --force --use <wrapper>` where the wrapper tees stdin — and submitting that. It touches
+nothing outside a temp directory.
+
+The same trap applies to any other verifier (Sourcify included) fed the reachable-subset input.
+
+## 4. Record the address
 
 Add it to `UNIVERSAL_ROUTER_ADDRESSES` in
 [`packages/universal-router-sdk/src/constants.ts`](../packages/universal-router-sdk/src/constants.ts):
@@ -74,7 +100,7 @@ Once recorded, `TopazRouter` and the routing API resolve it from the chain id. T
 explicit `universalRouterAddress` / `UNIVERSAL_ROUTER_ADDRESS`, which is how the fork tests point at
 a router deployed into their own fork.
 
-## 4. What users must approve
+## 5. What users must approve
 
 The router pulls funds two ways, and tries them in this order:
 
@@ -84,7 +110,7 @@ The router pulls funds two ways, and tries them in this order:
 
 Nothing needs approving for native BNB: it arrives as `msg.value` and is wrapped by the router.
 
-## 5. Sanity check after deploying
+## 6. Sanity check after deploying
 
 Re-run the fork suites against the real deployment by pointing the tests at it, and quote something
 end to end:
