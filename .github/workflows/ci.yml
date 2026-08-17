@@ -52,6 +52,15 @@ jobs:
         run: yarn build
       - name: Typecheck
         run: yarn lint
-      # the TypeScript suites boot an anvil fork and deploy onto it; they self-skip without an RPC
+      # The TypeScript suites boot an anvil fork and deploy onto it; they self-skip without an RPC,
+      # so this job is green on a pull request from a fork, which cannot see repository secrets.
+      #
+      # The Solidity suite is excluded here on purpose. Root `yarn test` includes it, but forge has
+      # no equivalent self-skip — `vm.createSelectFork` fails outright with `invalid rpc url` — so
+      # running it here turns every secret-less run red. The contracts job above owns it and guards
+      # it properly.
+      #
+      # The root workspace is excluded as well: `--all` would include it, and its own `test` script
+      # is an unfiltered `foreach --all`, which would recurse straight back into the Solidity suite.
       - name: Test
-        run: yarn test
+        run: yarn workspaces foreach --all --exclude topazdex-universal --exclude @topazdex/universal-router run test
