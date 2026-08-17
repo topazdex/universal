@@ -2,7 +2,7 @@ import { BigNumber } from '@ethersproject/bignumber'
 import { BaseProvider } from '@ethersproject/providers'
 import { AnyRoute, Swap, TPool, Trade } from '@topaz/router-sdk'
 import { BASE_TOKENS, Currency, CurrencyAmount, Token, TradeType } from '@topaz/sdk-core'
-import { SwapOptions, SwapRouter } from '@topaz/universal-router-sdk'
+import { SwapOptions, SwapRouter, universalRouterAddress } from '@topaz/universal-router-sdk'
 
 import { TOPAZ_CHAIN_ID } from '../constants'
 import { MulticallProvider } from '../providers/multicall'
@@ -47,7 +47,7 @@ export interface TopazRouterConstructorArgs {
   multicallProvider?: MulticallProvider
   poolProvider?: PoolProvider
   quoteProvider?: QuoteProvider
-  /** Needed only when the caller asks for executable calldata */
+  /** Overrides the recorded deployment for this chain, e.g. to target a router on a fork */
   universalRouterAddress?: string
   /** How long the pool list from the subgraphs is reused before refetching. Default 5 minutes. */
   subgraphCacheTtlMs?: number
@@ -158,11 +158,10 @@ export class TopazRouter {
     trade: Trade<Currency, Currency, TradeType>,
     swapOptions: SwapOptions
   ): { calldata: string; value: string; to: string } {
-    if (!this.universalRouterAddress) {
-      throw new Error('universalRouterAddress is required to build swap calldata')
-    }
+    // falls back to the router recorded for this chain, so only forks need to pass one
+    const to = universalRouterAddress(this.chainId, this.universalRouterAddress)
     const { calldata, value } = SwapRouter.swapCallParameters(trade, swapOptions)
-    return { calldata, value, to: this.universalRouterAddress }
+    return { calldata, value, to }
   }
 
   private async loadPools(

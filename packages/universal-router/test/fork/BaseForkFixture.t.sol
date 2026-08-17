@@ -37,8 +37,17 @@ abstract contract BaseForkFixture is Test {
     address public user = makeAddr('user');
     address public recipient = makeAddr('recipient');
 
+    /// @dev A block after the router was deployed to BNB Chain mainnet
+    uint256 internal constant DEPLOYED_FORK_BLOCK_DEFAULT = 116_365_000;
+
     function setUp() public virtual {
-        uint256 forkBlock = vm.envOr('FORK_BLOCK', uint256(0));
+        // set DEPLOYED_UNIVERSAL_ROUTER to run the whole suite against a live deployment instead of
+        // a router deployed into the fork; the fork then has to sit after that deployment
+        address deployedRouter = vm.envOr('DEPLOYED_UNIVERSAL_ROUTER', address(0));
+        uint256 forkBlock = deployedRouter == address(0)
+            ? vm.envOr('FORK_BLOCK', uint256(0))
+            : vm.envOr('DEPLOYED_FORK_BLOCK', DEPLOYED_FORK_BLOCK_DEFAULT);
+
         if (forkBlock == 0) {
             vm.createSelectFork(vm.envString('BSC_MAINNET_RPC'));
         } else {
@@ -46,16 +55,21 @@ abstract contract BaseForkFixture is Test {
         }
         assertEq(block.chainid, BscMainnet.CHAIN_ID, 'fork is not BNB Chain mainnet');
 
-        router = new UniversalRouter(
-            RouterParameters({
-                permit2: BscMainnet.PERMIT2,
-                weth9: BscMainnet.WBNB,
-                v2Factory: BscMainnet.POOL_FACTORY,
-                v2Implementation: BscMainnet.POOL_IMPLEMENTATION,
-                clFactory: BscMainnet.CL_FACTORY,
-                clImplementation: BscMainnet.CL_POOL_IMPLEMENTATION
-            })
-        );
+        if (deployedRouter == address(0)) {
+            router = new UniversalRouter(
+                RouterParameters({
+                    permit2: BscMainnet.PERMIT2,
+                    weth9: BscMainnet.WBNB,
+                    v2Factory: BscMainnet.POOL_FACTORY,
+                    v2Implementation: BscMainnet.POOL_IMPLEMENTATION,
+                    clFactory: BscMainnet.CL_FACTORY,
+                    clImplementation: BscMainnet.CL_POOL_IMPLEMENTATION
+                })
+            );
+        } else {
+            assertGt(deployedRouter.code.length, 0, 'no router deployed at DEPLOYED_UNIVERSAL_ROUTER');
+            router = UniversalRouter(payable(deployedRouter));
+        }
         vm.label(address(router), 'UniversalRouter');
         vm.label(WBNB, 'WBNB');
         vm.label(USDT, 'USDT');

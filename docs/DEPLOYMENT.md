@@ -1,6 +1,22 @@
 # Deploying the Universal Router
 
-The router is not deployed yet. This is what deploying it involves.
+| chain | address | verified against this source |
+| --- | --- | --- |
+| BNB Chain mainnet (56) | [`0x691e6171e0a434FfE5C9f1759621D05b9efcF6A6`](https://bscscan.com/address/0x691e6171e0a434FfE5C9f1759621D05b9efcF6A6) | `DeployedRouterForkTest`, byte for byte |
+
+To re-verify a deployment, or to run the whole behavioural suite against the live contract rather
+than one deployed into the fork:
+
+```bash
+cd packages/universal-router
+DEPLOYED_UNIVERSAL_ROUTER=0x691e6171e0a434FfE5C9f1759621D05b9efcF6A6 forge test
+```
+
+The router's parameters are immutable and baked into its runtime code, so deploying this source with
+the same parameters and comparing code proves both that the deployment is this source and that it
+was handed the right factories.
+
+The rest of this page is what deploying involves.
 
 ## 1. Check the parameters still hold
 
@@ -50,12 +66,13 @@ Add it to `UNIVERSAL_ROUTER_ADDRESSES` in
 
 ```ts
 export const UNIVERSAL_ROUTER_ADDRESSES: { [chainId: number]: string } = {
-  56: '0x…'
+  56: '0x691e6171e0a434FfE5C9f1759621D05b9efcF6A6'
 }
 ```
 
-Until then, `TopazRouter` and the routing API take the address explicitly
-(`universalRouterAddress` / `UNIVERSAL_ROUTER_ADDRESS`), which is how the fork tests run.
+Once recorded, `TopazRouter` and the routing API resolve it from the chain id. They still accept an
+explicit `universalRouterAddress` / `UNIVERSAL_ROUTER_ADDRESS`, which is how the fork tests point at
+a router deployed into their own fork.
 
 ## 4. What users must approve
 

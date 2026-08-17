@@ -26,10 +26,14 @@ export const MAX_UINT256 = BigNumber.from(2).pow(256).sub(1)
 export const MAX_UINT160 = BigNumber.from(2).pow(160).sub(1)
 
 /**
- * Deployed Universal Router addresses by chain id. Populated once the router is deployed;
- * until then callers pass the address explicitly, which the fork tests do.
+ * Deployed Universal Router addresses by chain id.
+ *
+ * The BNB Chain deployment is checked byte for byte against this repo's source by
+ * `DeployedRouterForkTest` in the universal-router package.
  */
-export const UNIVERSAL_ROUTER_ADDRESSES: { [chainId: number]: string } = {}
+export const UNIVERSAL_ROUTER_ADDRESSES: { [chainId: number]: string } = {
+  [TOPAZ_CHAIN_ID]: '0x691e6171e0a434FfE5C9f1759621D05b9efcF6A6'
+}
 
 export function universalRouterAddress(chainId: number, override?: string): string {
   const address = override ?? UNIVERSAL_ROUTER_ADDRESSES[chainId]
