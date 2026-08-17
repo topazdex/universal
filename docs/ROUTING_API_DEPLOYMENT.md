@@ -241,14 +241,34 @@ Three places, in order of how permanent the change is:
 3. `baseTokens` on `RoutingConfig` — per call, for programmatic use.
 
 A token earns a place by *connecting* pairs, not by being popular: it needs live pools with more
-than one counterparty, otherwise it can only ever be an endpoint. Tokens outside the list are still
-reachable — the router adds the counterparties of the deepest pools holding either side of the
-trade, so a long-tail token is picked up when it is actually relevant.
+than one counterparty, otherwise it can only ever be an endpoint.
 
-That auto-discovery is why widening the list changes less than you would expect. Measured on ten
-pairs, including spoke-to-spoke ones like SOL → XRP and BOOK → TOPAZ, going from 6 hubs to 10
-returned **identical quotes** for +0 to +7 `eth_call`s. The list matters as Topaz liquidity grows a
-denser middle; today most paths run through WBNB or USDT regardless.
+**Tokens outside the list are still routable.** For each traded token the router pulls in the
+counterparties of its deepest pools — `discoveredIntermediariesPerToken`, default 5 — so a new
+pairing becomes routable the moment it has liquidity, without anyone editing a list.
+
+Worked example. QQQB is a recent RWA token, paired with USDT, and TQB is paired with QQQB. Neither
+is a hub. Quoting 1 BNB → TQB:
+
+```
+maxHops=2   20,356,868 TQB    100%  BNB -> USDT -> TQB
+maxHops=3   24,095,222 TQB     75%  BNB -> USDT -> QQQB -> TQB
+                               25%  BNB -> ETH  -> USDT -> TQB
+```
+
+The QQQB path is worth **18% more output**, and it is found with QQQB in no configuration file
+anywhere. The default `maxHops = 3` is what makes it reachable: that route is three pools deep.
+
+That same discovery is why widening the hub list changes less than expected. Going from 6 hubs to 10
+was measured across ten pairs, including spoke-to-spoke ones like SOL → XRP and BOOK → TOPAZ, and
+returned **identical quotes** for more RPC calls — so the list stayed at 6. `SOL`, `USD1`, `XRP` and
+`BOOK` are exported from `@topazdex/sdk-core` if a future liquidity shift makes them worth adding.
+
+The limits worth knowing:
+
+- a route is capped at `maxHops` pools, so a token four hops from the trade is unreachable
+- discovery takes the 5 deepest pools per traded token, so a token with many pools may not surface
+  every counterparty — raise `discoveredIntermediariesPerToken` if that bites
 
 **Adding intermediaries is cheap now.** Routes are screened before the expensive pass (see below),
 so an extra intermediary costs about 2 quote calls per route it adds, not 20. Going from 6 to 10

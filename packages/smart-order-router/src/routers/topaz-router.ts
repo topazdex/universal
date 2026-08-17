@@ -31,6 +31,12 @@ export interface RoutingConfig {
   poolsOverride?: TPool[]
   /** Tokens the router may hop through, overriding BASE_TOKENS */
   baseTokens?: Token[]
+  /**
+   * How many of the deepest pools holding each traded token contribute their counterparty as a
+   * possible intermediary. This is how a token that is not a hub — a new pairing like QQQB —
+   * becomes routable without being listed anywhere. Default 5.
+   */
+  discoveredIntermediariesPerToken?: number
 }
 
 export interface SwapRoute {
@@ -225,7 +231,13 @@ export class TopazRouter {
       this.subgraphCache = { v2, cl, fetchedAt: Date.now() }
     }
 
-    const allowed = allowedTokenSet(currencyIn, currencyOut, this.subgraphCache, config.baseTokens)
+    const allowed = allowedTokenSet(
+      currencyIn,
+      currencyOut,
+      this.subgraphCache,
+      config.baseTokens,
+      config.discoveredIntermediariesPerToken
+    )
     const v2Candidates = this.subgraphCache.v2.filter(
       pool => allowed.has(pool.token0.id.toLowerCase()) && allowed.has(pool.token1.id.toLowerCase())
     )
@@ -254,6 +266,7 @@ function allowedTokenSet(
   baseTokens: Token[] = BASE_TOKENS,
   topPoolsPerToken = 5
 ): Set<string> {
+  // subgraph results arrive sorted by liquidity, so "top" here means the deepest pools
   const tokenIn = currencyIn.wrapped.address.toLowerCase()
   const tokenOut = currencyOut.wrapped.address.toLowerCase()
 

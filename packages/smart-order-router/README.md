@@ -14,7 +14,10 @@ subgraphs ─► candidate pools ─► live pool state ─► route enumeration
 ```
 
 1. **Discovery** — the v2 and v3 subgraphs rank pools by liquidity. They decide which pools are
-   worth considering; they are never used to price anything.
+   worth considering; they are never used to price anything. Candidates are the traded pair, the
+   hub tokens in `BASE_TOKENS`, and the counterparties of the deepest pools holding either traded
+   token — which is how a token that is nobody's hub still gets routed through. Quoting 1 BNB → TQB
+   finds `BNB → USDT → QQQB → TQB` and beats the two-hop path by 18%, with QQQB configured nowhere.
 2. **State** — every candidate pool is read on chain in one multicall: reserves and fee for v2,
    `slot0`/`liquidity`/`getSwapFee` for CL. Fees are read rather than assumed, because a v2 pool can
    carry a custom fee and a CL pool can be driven by a dynamic fee module.

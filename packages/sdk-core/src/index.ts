@@ -63,6 +63,9 @@ export const BOOK = new Token(TOPAZ_CHAIN_ID, '0xC9Ad421f96579AcE066eC188a7Bba47
  * are still reachable — the router adds the counterparties of the deepest pools holding either side
  * of the trade, so a long-tail token is picked up dynamically when it is actually relevant.
  *
- * Adding a token with no Topaz pools is harmless but pointless: it contributes no routes.
+ * Adding a token with no Topaz pools is harmless but pointless: it contributes no routes. Widening
+ * it beyond these six was measured and returned identical quotes on ten pairs for more RPC calls,
+ * because the dynamic discovery above already reached the same pools. SOL, USD1, XRP and BOOK are
+ * exported above so a deployment can add them via ROUTING_BASE_TOKENS if that changes.
  */
-export const BASE_TOKENS: Token[] = [WBNB, USDT, USDC, SOL, WETH, BTCB, USD1, TOPAZ, XRP, BOOK]
+export const BASE_TOKENS: Token[] = [WBNB, USDT, USDC, WETH, BTCB, TOPAZ]
