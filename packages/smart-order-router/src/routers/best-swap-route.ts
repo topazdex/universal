@@ -28,7 +28,12 @@ export interface BestSwapRouteConfig {
 }
 
 /**
- * Picks the combination of routes that maximises the gas adjusted quote.
+ * Picks the combination of routes that returns the most tokens for exact input, or spends the
+ * fewest tokens for exact output.
+ *
+ * Gas is reported alongside the result, but it does not decide execution. The caller pays gas in
+ * BNB separately, and converting that cost through a spot price must not make the API return fewer
+ * output tokens than a protocol-specific route it already found and quoted.
  *
  * A breadth first search over splits, after Uniswap's alpha router: start from the best single
  * route, then repeatedly extend partial allocations with the best complementary percentage that
@@ -55,7 +60,7 @@ export function getBestSwapRoute(
   }
   for (const percent of Object.keys(percentToSortedQuotes)) {
     percentToSortedQuotes[Number(percent)].sort((a, b) =>
-      better(a.quoteAdjustedForGas, b.quoteAdjustedForGas) ? -1 : 1
+      better(a.quote, b.quote) ? -1 : 1
     )
   }
 
@@ -64,7 +69,7 @@ export function getBestSwapRoute(
 
   if (percentToSortedQuotes[100]?.length && minSplits <= 1) {
     best = [percentToSortedQuotes[100][0]]
-    bestQuote = percentToSortedQuotes[100][0].quoteAdjustedForGas
+    bestQuote = percentToSortedQuotes[100][0].quote
   }
 
   interface QueueEntry {
@@ -107,7 +112,7 @@ export function getBestSwapRoute(
 
         if (nextRemaining === 0) {
           if (nextRoutes.length < minSplits) continue
-          const quote = sum(nextRoutes.map(route => route.quoteAdjustedForGas))
+          const quote = sum(nextRoutes.map(route => route.quote))
           if (!bestQuote || better(quote, bestQuote)) {
             bestQuote = quote
             best = nextRoutes

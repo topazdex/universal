@@ -8,7 +8,7 @@ Universal Router calldata that executes it.
 ```
 subgraphs ─► candidate pools ─► live pool state ─► route enumeration ─► on-chain quotes
                                                                             │
-                                            best split search ◄── gas adjusted quotes
+                                            best split search ◄──── token quotes
                                                      │
                                           Trade ─► Universal Router calldata
 ```
@@ -40,7 +40,9 @@ subgraphs ─► candidate pools ─► live pool state ─► route enumeration
    token through the deepest BNB pool available.
 8. **Split search** — a breadth-first search over percentage allocations, after Uniswap's alpha
    router: seed with the best single route, extend with the best complementary allocation that does
-   not re-use a pool, keep the best gas-adjusted total.
+   not re-use a pool, keep the total with the best token output (or lowest token input). Gas is
+   estimated and returned separately; it never makes a combined search lose to a pure route on the
+   token amount the swap actually executes.
 
 ## Usage
 
