@@ -98,7 +98,7 @@ describeIfRpc('smart order router against live Topaz liquidity', () => {
     expect(BigNumber.from(result!.quote.quotient.toString()).gte(direct)).toBe(true)
   })
 
-  it('prices gas into the comparison, so the gas adjusted quote trails the raw quote', async () => {
+  it('reports the gas-adjusted value separately from the executable raw quote', async () => {
     const amount = CurrencyAmount.fromRawAmount(BNB_NATIVE, '100000000000000000') // 0.1 BNB
     const result = await router.route(amount, USDT, TradeType.EXACT_INPUT)
 

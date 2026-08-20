@@ -75,7 +75,7 @@ export interface TopazRouterConstructorArgs {
  *
  * Pipeline: discover candidate pools from the subgraphs, read their live state on chain, enumerate
  * routes (pure v2, pure CL, and mixed), quote every route at every split size with Topaz's own
- * quoters, adjust each quote for the gas that route costs, then search for the best combination.
+ * quoters, search for the combination with the best token amount, then report its gas cost.
  */
 export class TopazRouter {
   private readonly provider: BaseProvider
