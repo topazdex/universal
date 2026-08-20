@@ -271,9 +271,10 @@ A revert here almost always means the quote went stale — re-quote and retry.
 
 ## 4. CORS
 
-Allowed origins: **any `localhost` or `127.0.0.1` port** over http, plus `https://app.topazdex.com`
-and the apex and `www` hosts. Dev servers differ — Vite is 5173, Next is 3000 — and a browser treats
-`http://127.0.0.1:3000` as a *different origin* from `http://localhost:3000`, so both spellings work.
+Allowed origins: **any `localhost` or `127.0.0.1` port** over http, plus `https://topazdex.com` and
+**any of its subdomains** over https — `app`, `www`, `a2`, and whatever ships next. Dev servers
+differ — Vite is 5173, Next is 3000 — and a browser treats `http://127.0.0.1:3000` as a *different
+origin* from `http://localhost:3000`, so both spellings work.
 
 Any request header you ask for is allowed; the preflight reflects it back. That matters for the
 `Cache-Control: no-cache` refresh below, because `Cache-Control` is not CORS-safelisted and so
@@ -282,7 +283,8 @@ triggers a preflight of its own.
 If a browser reports a CORS error, check in this order:
 
 1. **The origin.** Open devtools → Network → the failed request → Request Headers → `Origin`. It must
-   be loopback or a topazdex host. A tunnel (`ngrok`, `*.vercel.app` preview) is neither.
+   be loopback, or `topazdex.com` or a subdomain of it over https. A tunnel (`ngrok`, `*.vercel.app`
+   preview) is neither, and nor is a topazdex host over plain http.
 2. **Credentials.** The API never accepts them, so `credentials: 'include'` on your `fetch` will fail
    regardless of origin. Leave it unset.
 3. **A non-2xx response.** A `400` or `404` still carries CORS headers, but the browser surfaces the

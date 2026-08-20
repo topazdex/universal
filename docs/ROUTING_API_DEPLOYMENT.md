@@ -26,7 +26,7 @@ Latency is dominated by RPC round trips, so co-locate the service with the RPC p
 | `MULTICALL_BATCH_SIZE` | no | `15` | quote calls per `eth_call`; see the tuning section before changing it |
 | `MULTICALL_CONCURRENCY` | no | `16` | `eth_call`s in flight; lower it if the RPC rate limits you |
 | `ROUTING_BASE_TOKENS` | no | `BASE_TOKENS` | comma separated addresses the router may hop through |
-| `CORS_ORIGINS` | no | `localhost`, app/apex/www topazdex.com | comma separated browser origins. The literal `localhost` means any loopback port; `*` allows any origin |
+| `CORS_ORIGINS` | no | `localhost`, `https://topazdex.com`, `https://*.topazdex.com` | comma separated browser origins. The literal `localhost` means any loopback port; a `*` in a host (`https://*.example.com`) matches its subdomains but not the apex; `*` alone allows any origin |
 | `QUOTE_CACHE_TTL_MS` | no | `1000` | how long an identical quote is reused; `0` disables it |
 
 No secrets beyond the RPC URL. If your RPC key is in the URL, treat the whole variable as a secret.

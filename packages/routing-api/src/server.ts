@@ -19,17 +19,25 @@ import { BadRequestError, QuotePermit, QuoteResponse, QuoteService } from './quo
  * 5173, Next is 3000, and a browser treats `127.0.0.1` as a different origin from `localhost`.
  * That is safe here: quotes are public read-only data and no credentials are ever accepted, so
  * CORS is gating who may *read* a response their own machine could fetch with curl regardless.
+ *
+ * The wildcard covers every topazdex host — `app`, `www`, `a2`, whatever ships next — without a
+ * deploy per subdomain. The apex is listed separately because `*.` requires a label.
  */
-export const DEFAULT_CORS_ORIGINS = [
-  'localhost',
-  'https://app.topazdex.com',
-  'https://topazdex.com',
-  'https://www.topazdex.com'
-]
+export const DEFAULT_CORS_ORIGINS = ['localhost', 'https://topazdex.com', 'https://*.topazdex.com']
 
 /** `localhost` in an allowlist means any port, over http, on either loopback spelling */
 function isLoopback(origin: string): boolean {
   return /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/.test(origin)
+}
+
+/**
+ * `https://*.topazdex.com` matches any subdomain, at any depth. The `*` stands for hostname labels
+ * and nothing else, and the pattern is anchored, so `https://app.topazdex.com.evil.example` and
+ * `https://topazdex.com.evil.example` both still fail.
+ */
+function compileWildcard(pattern: string): RegExp {
+  const escaped = pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  return new RegExp(`^${escaped.replace(/\\\*/g, '[a-z0-9-]+(?:\\.[a-z0-9-]+)*')}$`)
 }
 
 export interface ServerConfig {
@@ -116,12 +124,19 @@ function cors(origins: string[]) {
   const allowAll = origins.includes('*')
   const allowLoopback = origins.includes('localhost')
   const allowed = new Set(origins.map(origin => origin.toLowerCase()))
+  const patterns = origins
+    .filter(origin => origin !== '*' && origin.includes('*'))
+    .map(origin => compileWildcard(origin.toLowerCase()))
+
+  function isAllowed(origin: string): boolean {
+    if (allowAll || allowed.has(origin)) return true
+    if (allowLoopback && isLoopback(origin)) return true
+    return patterns.some(pattern => pattern.test(origin))
+  }
 
   return (request: Request, response: Response, next: NextFunction): void => {
     const origin = request.headers.origin
-    const permitted =
-      Boolean(origin) &&
-      (allowAll || allowed.has((origin as string).toLowerCase()) || (allowLoopback && isLoopback(origin as string)))
+    const permitted = Boolean(origin) && isAllowed((origin as string).toLowerCase())
 
     // set unconditionally: a shared cache must not serve a header-less response to an allowed
     // origin, or vice versa

@@ -1,7 +1,7 @@
 import type { Express } from 'express'
 import request from 'supertest'
 
-import { createApp, DEFAULT_CORS_ORIGINS } from './server'
+import { createApp } from './server'
 
 // no RPC is touched: these only exercise the middleware
 const app = (corsOrigins?: string[]): Express =>
@@ -9,8 +9,14 @@ const app = (corsOrigins?: string[]): Express =>
 
 describe('CORS', () => {
   describe('allowed origins', () => {
-    it.each(DEFAULT_CORS_ORIGINS.filter(o => o.startsWith('http')))('echoes %s back by default', async origin => {
-      // #when
+    it.each([
+      'https://topazdex.com',
+      'https://app.topazdex.com',
+      'https://www.topazdex.com',
+      'https://a2.topazdex.com',
+      'https://a2.staging.topazdex.com'
+    ])('echoes %s back by default', async origin => {
+      // #given the defaults are the apex plus a wildcard over every topazdex subdomain
       const response = await request(app()).get('/health').set('Origin', origin)
 
       // #then
@@ -99,8 +105,15 @@ describe('CORS', () => {
       expect(response.headers['access-control-allow-origin']).toBeUndefined()
     })
 
-    it('does not match on a prefix', async () => {
-      const response = await request(app()).get('/health').set('Origin', 'https://app.topazdex.com.evil.example')
+    it.each([
+      'https://app.topazdex.com.evil.example',
+      'https://topazdex.com.evil.example',
+      'https://eviltopazdex.com',
+      'https://topazdex.com.br',
+      'http://app.topazdex.com'
+    ])('refuses %s, which only looks like a topazdex host', async origin => {
+      // #given the wildcard stands for hostname labels under https, not for arbitrary text
+      const response = await request(app()).get('/health').set('Origin', origin)
 
       expect(response.headers['access-control-allow-origin']).toBeUndefined()
     })
@@ -128,6 +141,16 @@ describe('CORS', () => {
       const denied = await request(configured).get('/health').set('Origin', 'https://app.topazdex.com')
 
       expect(allowed.headers['access-control-allow-origin']).toEqual('https://staging.topazdex.com')
+      expect(denied.headers['access-control-allow-origin']).toBeUndefined()
+    })
+
+    it('honours a wildcard subdomain, which does not extend to the apex', async () => {
+      const configured = app(['https://*.example.com'])
+
+      const allowed = await request(configured).get('/health').set('Origin', 'https://preview.example.com')
+      const denied = await request(configured).get('/health').set('Origin', 'https://example.com')
+
+      expect(allowed.headers['access-control-allow-origin']).toEqual('https://preview.example.com')
       expect(denied.headers['access-control-allow-origin']).toBeUndefined()
     })
 
