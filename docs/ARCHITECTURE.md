@@ -43,7 +43,7 @@ fee-sharing extension. Dropping them removes a large amount of dead delegate-cal
 | `v3-sdk` | forked from `@uniswap/v3-sdk`. Tick, swap and price math is upstream's, unchanged; pool identity, path encoding and the quoter are Slipstream's. |
 | `router-sdk` | written against Topaz's `MixedRouteQuoterV1` encoding, following Uniswap's router-sdk concepts (mixed routes, protocol partitioning, multi-route trades). |
 | `universal-router-sdk` | written against this repo's router. The command planner mirrors Uniswap's, the swap encoders are Topaz's. |
-| `smart-order-router` | architecture and the split-search algorithm follow Uniswap's alpha router; the providers are Topaz's. Uniswap's SOR is ~114 files of chain configs, v4, UniswapX, Tenderly simulation and AWS caching, nearly all of which would be deleted for a single-chain two-protocol deployment, so the parts that carry the value — candidate pools, route enumeration, percentage split search with gas adjustment — were ported directly instead. |
+| `smart-order-router` | architecture and the split-search algorithm follow Uniswap's alpha router; the providers are Topaz's. Uniswap's SOR is ~114 files of chain configs, v4, UniswapX, Tenderly simulation and AWS caching, nearly all of which would be deleted for a single-chain two-protocol deployment, so the parts that carry the value — candidate pools, route enumeration, percentage split search — were ported directly instead. The split search diverges on one point: it ranks on the token amount, not on Uniswap's gas-adjusted quote. |
 | `routing-api` | an Express service over the router, serving the same shape of quote response as Uniswap's routing-api. |
 
 ## Design decisions worth knowing
