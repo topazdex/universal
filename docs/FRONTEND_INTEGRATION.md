@@ -111,7 +111,7 @@ Which numbers belong in the UI:
 | --- | --- |
 | `quote` | the headline "you receive" (or "you pay" for `exactOut`) |
 | `minimumAmountOut` / `maximumAmountIn` | the "at least" / "at most" line. **Do not recompute this from `quote` and slippage** — it comes from the same trade the calldata was built from, so it always agrees with what the chain will enforce |
-| `quoteGasAdjusted` | for comparing routes, not for display. `quote` minus the route's gas cost, in the quote token |
+| `quoteGasAdjusted` | informational. `quote` minus the route's gas cost, in the quote token, priced through a spot rate. The router does not rank on it — `quote` is the executable number |
 | `gasUseEstimate` | gas to show, and a sane `gasLimit` starting point |
 | `routes[].hops` | the route diagram; `percent` gives the split weights |
 

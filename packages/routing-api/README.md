@@ -65,8 +65,9 @@ curl 'localhost:3000/quote?tokenIn=BNB&tokenOut=0x55d398326f99059fF7754852469990
 }
 ```
 
-`quote` is the output for `exactIn` and the input for `exactOut`. `quoteGasAdjusted` is the number
-to compare offers on, since it nets out what the route costs to execute.
+`quote` is the output for `exactIn` and the input for `exactOut`, and it is the number the router
+maximises. `quoteGasAdjusted` nets out what the route costs to execute, priced through a spot rate;
+it is reported for information and never decides which route is served.
 
 Errors: `400` for a malformed request or an unresolvable token, `404` when no route exists, `500`
 otherwise.
