@@ -49,6 +49,7 @@ one (a signature is 132 characters and does not belong in a URL). The parameters
 | `slippageBips` | no | `50` | 50 = 0.50%. Bounds the limit written into the calldata |
 | `deadlineSeconds` | no | `1800` | seconds from now until the transaction expires |
 | `permit` | no | | a signed Permit2 allowance, POST only. See §2 |
+| `permitGrantedInBatch` | no | `false` | the Permit2 allowance is granted earlier in the same atomic batch, so return permit-free calldata. See §2 |
 | `maxHops` | no | `3` | pools per route |
 | `maxSplits` | no | `3` | routes the trade may be split across |
 | `distributionPercent` | no | `5` | split granularity; 25 is faster and coarser |
@@ -220,6 +221,41 @@ const quote = await fetch('https://quote.topazdex.com/quote', {
 
 `permit.details.token` must be the input token and `permit.spender` must be the router, or the API
 returns `400`.
+
+### Batched approvals instead of a signature (EIP-5792)
+
+A wallet that executes atomic batches (`wallet_sendCalls` — Gnosis Safe, smart accounts) can grant
+both allowances and swap in a **single confirmation**, with no signature step at all. Ask for the
+quote with `permitGrantedInBatch: true` — `&permitGrantedInBatch=true` on GET, a boolean on POST —
+and the API returns calldata containing no `PERMIT2_PERMIT` command, without requiring the Permit2
+allowance to exist on chain yet. Any `permit` sent alongside the flag is ignored.
+
+The client builds and orders the batch itself, three calls:
+
+```ts
+const quote = await fetch(`${swapUrl}&permitGrantedInBatch=true`).then(r => r.json())
+const router = quote.methodParameters.to
+
+await sendCalls({ calls: [
+  // 1. the once-per-token ERC20 approval — include it unless allowance(user, PERMIT2) > 0
+  { to: tokenIn, data: encodeFunctionData({ abi: erc20Abi, functionName: 'approve',
+      args: [PERMIT2_ADDRESS, maxUint256] }) },
+  // 2. the Permit2 allowance the signature would otherwise have granted
+  { to: PERMIT2_ADDRESS, data: encodeFunctionData({
+      abi: [{ name: 'approve', type: 'function', stateMutability: 'nonpayable',
+        inputs: [{ type: 'address' }, { type: 'address' }, { type: 'uint160' }, { type: 'uint48' }],
+        outputs: [] }],
+      functionName: 'approve',
+      args: [tokenIn, router, 2n ** 160n - 1n, Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 30],
+    }) },
+  // 3. the swap
+  { to: router, data: quote.methodParameters.calldata, value: quote.methodParameters.value },
+] })
+```
+
+By the time the swap runs, both allowances exist, so the calldata pulls funds with a plain Permit2
+transfer exactly as it does for a returning user. Native BNB input never touches Permit2, so the
+flag is a no-op there.
 
 ### A plain approval instead
 

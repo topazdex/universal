@@ -207,6 +207,8 @@ function parseQuoteQuery(query: QueryLike) {
     throw new BadRequestError('slippageBips must be between 0 and 5000')
   }
 
+  const permitGrantedInBatch = query.permitGrantedInBatch === true || query.permitGrantedInBatch === 'true'
+
   const routingConfig = {
     ...(query.maxHops ? { maxHops: Number(query.maxHops) } : {}),
     ...(query.maxSplits ? { maxSplits: Number(query.maxSplits) } : {}),
@@ -224,7 +226,10 @@ function parseQuoteQuery(query: QueryLike) {
     recipient,
     slippageBips,
     deadlineSeconds: query.deadlineSeconds ? Number(query.deadlineSeconds) : undefined,
-    permit: parsePermit(query.permit),
+    // a permit alongside the in-batch grant is ignored outright, not validated: the batch
+    // supersedes it, so a client that sent both by mistake still gets its quote
+    permit: permitGrantedInBatch ? undefined : parsePermit(query.permit),
+    permitGrantedInBatch,
     routingConfig
   }
 }

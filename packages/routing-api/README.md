@@ -32,6 +32,7 @@ signing and execution end to end.
 | `recipient` | no | supplying it returns executable `methodParameters` |
 | `slippageBips` | no | default 50 (0.5%) |
 | `permit` | no | a signed Permit2 `PermitSingle`, POST only |
+| `permitGrantedInBatch` | no | the Permit2 allowance arrives earlier in the same EIP-5792 batch: return permit-free calldata, ignore any `permit` |
 | `deadlineSeconds` | no | default 1800 |
 | `maxHops`, `maxSplits`, `distributionPercent`, `includeMixedRoutes` | no | routing knobs, see the SOR README |
 
@@ -106,6 +107,7 @@ docker build -f packages/routing-api/Dockerfile -t topazdex/routing-api .
 | --- | --- |
 | `server.test.ts` | the service against an anvil fork with the Universal Router deployed — the calldata it returns is executed |
 | `permit.test.ts` | a swap pulled entirely by a signed Permit2 allowance, folded into one transaction |
+| `batch.test.ts` | permit-free calldata for EIP-5792 batching wallets, executed behind in-batch approvals |
 | `cache.test.ts` | reuse window, in-flight coalescing, and every path that must bypass the cache |
 | `cors.test.ts` | which origins are allowed, and that a preflight reflects requested headers |
 

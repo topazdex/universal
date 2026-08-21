@@ -75,7 +75,7 @@ the network suites self-skip, which is silent: check the counts below.
 | --- | --- |
 | universal-router | 43 forge (1 skips without `DEPLOYED_UNIVERSAL_ROUTER`) |
 | smart-order-router | 32 |
-| routing-api | 46 |
+| routing-api | 51 |
 | v2-sdk | 17 |
 | universal-router-sdk | 9 |
 | sdk-core | 7 |

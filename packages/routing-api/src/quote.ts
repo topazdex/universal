@@ -39,6 +39,13 @@ export interface QuoteRequest {
    * Only meaningful alongside `recipient`, since it only affects the calldata.
    */
   permit?: QuotePermit
+  /**
+   * The Permit2 allowance is being granted on chain in the same atomic batch (EIP-5792),
+   * immediately before the swap. The calldata pulls funds with a plain Permit2 transfer — no
+   * `PERMIT2_PERMIT` command — and any supplied `permit` is ignored. A no-op for native input,
+   * which never touches Permit2.
+   */
+  permitGrantedInBatch?: boolean
   /** Recompute rather than reuse a recent identical quote. For an explicit user refresh. */
   skipCache?: boolean
   routingConfig?: RoutingConfig
@@ -104,6 +111,9 @@ export class QuoteService {
   public async quoteWithCacheOutcome(
     request: QuoteRequest
   ): Promise<{ value: QuoteResponse | null; hit: boolean; ageMs: number }> {
+    // the in-batch grant replaces the signed permit, so nothing single-use reaches the calldata
+    // and the request stays cacheable
+    if (request.permitGrantedInBatch && request.permit) request = { ...request, permit: undefined }
     // a permit is single use, so a request carrying one must never be served from cache
     if (request.permit || !this.cache.enabled) {
       return { value: await this.computeQuote(request), hit: false, ageMs: 0 }
