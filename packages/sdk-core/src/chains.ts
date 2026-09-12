@@ -103,7 +103,7 @@ registerChain({
     decimals: 18
   },
   wrappedNativeAddress: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
-  rpcUrls: ['https://ethereum-rpc.publicnode.com'],
+  rpcUrls: ['https://ethereum-rpc.publicnode.com', 'https://eth.drpc.org'],
   permit2Address: '0x000000000022D473030F116dDEE9F6B43aC78BA3',
   multicallAddress: '0xcA11bde05977b3631167028862bE2a173976CA11',
   v2FactoryAddress: '0x1E3aC31cF96b20619c913384C9bf6010A824fB95',
@@ -256,7 +256,8 @@ registerChain({
     decimals: 18
   },
   wrappedNativeAddress: '0x4200000000000000000000000000000000000006',
-  rpcUrls: ['https://mainnet.base.org'],
+  // mainnet.base.org answers 429 under modest load; publicnode takes over while it cools down
+  rpcUrls: ['https://mainnet.base.org', 'https://base-rpc.publicnode.com'],
   multicallAddress: '0xcA11bde05977b3631167028862bE2a173976CA11',
   v2FactoryAddress: '0x1E3aC31cF96b20619c913384C9bf6010A824fB95',
   v2PoolImplementationAddress: '0x8776BE6cd50BB78414c655bc8bF9e86A0989722F',
