@@ -1,7 +1,7 @@
 import { BigNumber } from '@ethersproject/bignumber'
 import { BaseProvider } from '@ethersproject/providers'
 import { AnyRoute, Swap, TPool, Trade } from '@topazdex/router-sdk'
-import { BASE_TOKENS, Currency, CurrencyAmount, Token, TradeType } from '@topazdex/sdk-core'
+import { baseTokensOnChain, getChainConfig, Currency, CurrencyAmount, Token, TradeType } from '@topazdex/sdk-core'
 import { SwapOptions, SwapRouter, universalRouterAddress } from '@topazdex/universal-router-sdk'
 
 import { TOPAZ_CHAIN_ID } from '../constants'
@@ -15,6 +15,8 @@ import { prerankRoutes } from './estimate-route'
 import { GasModel } from './gas-model'
 
 export interface RoutingConfig {
+  /** Refresh pool discovery as well as on-chain state, e.g. after creating a pool. */
+  refreshPools?: boolean
   /** Granularity of the split search: 5 means the input is explored in 5% steps */
   distributionPercent?: number
   maxSplits?: number
@@ -61,6 +63,7 @@ export interface TopazRouterConstructorArgs {
   provider: BaseProvider
   chainId?: number
   subgraphProvider?: SubgraphProvider
+  subgraphUrl?: string
   multicallProvider?: MulticallProvider
   poolProvider?: PoolProvider
   quoteProvider?: QuoteProvider
@@ -87,14 +90,17 @@ export class TopazRouter {
 
   private subgraphCache: { v2: V2SubgraphPool[]; cl: CLSubgraphPool[]; fetchedAt: number } | undefined
   private readonly subgraphCacheTtlMs: number
+  private discoveryPending: Promise<void> | undefined
 
   public constructor(args: TopazRouterConstructorArgs) {
     this.provider = args.provider
     this.chainId = args.chainId ?? TOPAZ_CHAIN_ID
-    this.subgraphProvider = args.subgraphProvider ?? new SubgraphProvider()
-    const multicall = args.multicallProvider ?? new MulticallProvider(args.provider)
+    const chain = getChainConfig(this.chainId)
+    this.subgraphProvider = args.subgraphProvider ?? SubgraphProvider.forChain(this.chainId, args.subgraphUrl)
+    const multicall = args.multicallProvider ?? new MulticallProvider(args.provider, {}, chain.multicallAddress)
     this.poolProvider = args.poolProvider ?? new PoolProvider(this.chainId, multicall)
-    this.quoteProvider = args.quoteProvider ?? new QuoteProvider(multicall)
+    this.quoteProvider =
+      args.quoteProvider ?? new QuoteProvider(multicall, chain.mixedQuoterAddress, chain.quoterV2Address, this.chainId)
     this.universalRouterAddress = args.universalRouterAddress
     this.subgraphCacheTtlMs = args.subgraphCacheTtlMs ?? 5 * 60 * 1000
   }
@@ -106,6 +112,21 @@ export class TopazRouter {
     swapOptions?: SwapOptions,
     config: RoutingConfig = {}
   ): Promise<SwapRoute | null> {
+    for (const [key, min, max] of [['maxHops', 1, 3], ['maxSplits', 1, 4], ['minSplits', 1, 4], ['distributionPercent', 5, 100], ['maxRoutesPerProtocol', 1, 60], ['maxRoutesToQuote', 1, 32], ['maxRoutesToScreen', 1, 180], ['subgraphPoolCount', 1, 1000]] as const) {
+      const value = config[key]
+      if (value !== undefined && (!Number.isSafeInteger(value) || value < min || value > max)) throw new Error(`Invalid routing ${key}`)
+    }
+    if (100 % (config.distributionPercent ?? 5) !== 0) throw new Error('Invalid routing distributionPercent')
+    if ((config.minSplits ?? 1) > (config.maxSplits ?? 3)) throw new Error('Invalid routing split limits')
+    if (
+      amount.currency.chainId !== this.chainId ||
+      quoteCurrency.chainId !== this.chainId ||
+      config.baseTokens?.some((token) => token.chainId !== this.chainId) ||
+      config.poolsOverride?.some((pool) => pool.chainId !== this.chainId)
+    ) {
+      throw new Error(`All currencies and pools must belong to chain ${this.chainId}`)
+    }
+    if (swapOptions) universalRouterAddress(this.chainId, this.universalRouterAddress)
     const blockNumber = config.blockNumber ?? (await this.provider.getBlockNumber())
     const [currencyIn, currencyOut] =
       tradeType === TradeType.EXACT_INPUT ? [amount.currency, quoteCurrency] : [quoteCurrency, amount.currency]
@@ -119,7 +140,7 @@ export class TopazRouter {
       includeMixedRoutes: config.includeMixedRoutes
     })
 
-    const routes: AnyRoute<Currency, Currency>[] = [...clRoutes, ...v2Routes, ...mixedRoutes].filter(route =>
+    const routes: AnyRoute<Currency, Currency>[] = [...clRoutes, ...v2Routes, ...mixedRoutes].filter((route) =>
       routeSupportsTradeType(route, tradeType)
     )
     if (routes.length === 0) return null
@@ -130,11 +151,7 @@ export class TopazRouter {
     // uses; everything kept is still priced on chain
     const screenable =
       tradeType === TradeType.EXACT_INPUT
-        ? prerankRoutes(
-            routes,
-            [amounts[0].amount, amounts[amounts.length - 1].amount],
-            config.maxRoutesToScreen ?? 20
-          )
+        ? prerankRoutes(routes, [amounts[0].amount, amounts[amounts.length - 1].amount], config.maxRoutesToScreen ?? 20)
         : routes
     // the screen width follows how many routes were *found*, not how many survived local ranking.
     // Deriving it from the narrowed set shrank the screen along with it, which cost up to 50 bips.
@@ -148,7 +165,7 @@ export class TopazRouter {
     const gasPrice = await this.provider.getGasPrice()
     const gasModel = new GasModel(gasPrice, quoteCurrency, pools)
 
-    const routesWithValidQuotes: RouteWithValidQuote[] = quotes.map(quote => {
+    const routesWithValidQuotes: RouteWithValidQuote[] = quotes.map((quote) => {
       const gas = gasModel.estimate(quote.route, quote.initializedTicksCrossed)
       const quoteAdjustedForGas =
         tradeType === TradeType.EXACT_INPUT
@@ -220,11 +237,11 @@ export class TopazRouter {
     const survivors = pickBestRoutes(screenQuotes, tradeType, maxRoutes)
     const remaining = amounts.slice(1, amounts.length - 1)
     if (remaining.length === 0) {
-      return screenQuotes.filter(quote => survivors.has(quote.route))
+      return screenQuotes.filter((quote) => survivors.has(quote.route))
     }
 
     const rest = await this.quoteProvider.getQuotes(Array.from(survivors), remaining, tradeType, options)
-    return [...screenQuotes.filter(quote => survivors.has(quote.route)), ...rest]
+    return [...screenQuotes.filter((quote) => survivors.has(quote.route)), ...rest]
   }
 
   private buildMethodParameters(
@@ -245,27 +262,32 @@ export class TopazRouter {
   ): Promise<TPool[]> {
     // the pool list only changes when pools are created or drained, so it is cached; pool state
     // itself is always read fresh from the chain below
-    if (!this.subgraphCache || Date.now() - this.subgraphCache.fetchedAt > this.subgraphCacheTtlMs) {
-      const count = config.subgraphPoolCount ?? 500
-      const [v2, cl] = await Promise.all([
-        this.subgraphProvider.getV2Pools(count),
-        this.subgraphProvider.getCLPools(count)
-      ])
-      this.subgraphCache = { v2, cl, fetchedAt: Date.now() }
+    if (
+      config.refreshPools ||
+      !this.subgraphCache ||
+      Date.now() - this.subgraphCache.fetchedAt > this.subgraphCacheTtlMs
+    ) {
+      this.discoveryPending ??= (async () => {
+        const count = config.subgraphPoolCount ?? 500
+        const [v2, cl] = await Promise.all([this.subgraphProvider.getV2Pools(count), this.subgraphProvider.getCLPools(count)])
+        this.subgraphCache = { v2, cl, fetchedAt: Date.now() }
+      })().finally(() => { this.discoveryPending = undefined })
+      await this.discoveryPending
     }
 
+    if (!this.subgraphCache) throw new Error('Pool discovery unavailable')
     const allowed = allowedTokenSet(
       currencyIn,
       currencyOut,
       this.subgraphCache,
-      config.baseTokens,
+      config.baseTokens ?? baseTokensOnChain(this.chainId),
       config.discoveredIntermediariesPerToken
     )
     const v2Candidates = this.subgraphCache.v2.filter(
-      pool => allowed.has(pool.token0.id.toLowerCase()) && allowed.has(pool.token1.id.toLowerCase())
+      (pool) => allowed.has(pool.token0.id.toLowerCase()) && allowed.has(pool.token1.id.toLowerCase())
     )
     const clCandidates = this.subgraphCache.cl.filter(
-      pool => allowed.has(pool.token0.id.toLowerCase()) && allowed.has(pool.token1.id.toLowerCase())
+      (pool) => allowed.has(pool.token0.id.toLowerCase()) && allowed.has(pool.token1.id.toLowerCase())
     )
 
     const [v2Pools, clPools] = await Promise.all([
@@ -286,7 +308,7 @@ function allowedTokenSet(
   currencyIn: Currency,
   currencyOut: Currency,
   subgraph: { v2: V2SubgraphPool[]; cl: CLSubgraphPool[] },
-  baseTokens: Token[] = BASE_TOKENS,
+  baseTokens: Token[],
   topPoolsPerToken = 5
 ): Set<string> {
   // subgraph results arrive sorted by liquidity, so "top" here means the deepest pools
@@ -333,23 +355,23 @@ function pickBestRoutes(
         ? 1
         : -1
       : b.quote.lessThan(a.quote)
-        ? 1
-        : -1
+      ? 1
+      : -1
   }
 
-  const percents = [...new Set(quotes.map(quote => quote.percent))]
+  const percents = [...new Set(quotes.map((quote) => quote.percent))]
   const survivors = new Set<AnyRoute<Currency, Currency>>()
   const perPercent = Math.max(1, Math.ceil(limit / percents.length))
 
   for (const percent of percents) {
-    const ranked = quotes.filter(quote => quote.percent === percent).sort(better)
+    const ranked = quotes.filter((quote) => quote.percent === percent).sort(better)
     for (const quote of ranked.slice(0, perPercent)) survivors.add(quote.route)
   }
 
   // top up from the largest slice if the two rankings overlapped
   if (survivors.size < limit) {
     const largest = Math.max(...percents)
-    const ranked = quotes.filter(quote => quote.percent === largest).sort(better)
+    const ranked = quotes.filter((quote) => quote.percent === largest).sort(better)
     for (const quote of ranked) {
       if (survivors.size >= limit) break
       survivors.add(quote.route)
@@ -388,13 +410,11 @@ function subtractFloorZero(
   amount: CurrencyAmount<Currency>,
   toSubtract: CurrencyAmount<Currency>
 ): CurrencyAmount<Currency> {
-  return amount.greaterThan(toSubtract)
-    ? amount.subtract(toSubtract)
-    : CurrencyAmount.fromRawAmount(amount.currency, 0)
+  return amount.greaterThan(toSubtract) ? amount.subtract(toSubtract) : CurrencyAmount.fromRawAmount(amount.currency, 0)
 }
 
 function buildTrade(best: BestSwapRoute, tradeType: TradeType): Trade<Currency, Currency, TradeType> {
-  const swaps: Swap<Currency, Currency>[] = best.routes.map(route =>
+  const swaps: Swap<Currency, Currency>[] = best.routes.map((route) =>
     tradeType === TradeType.EXACT_INPUT
       ? { route: route.route, inputAmount: route.amount, outputAmount: route.quote }
       : { route: route.route, inputAmount: route.quote, outputAmount: route.amount }

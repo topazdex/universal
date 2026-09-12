@@ -1,18 +1,17 @@
 import { Interface } from '@ethersproject/abi'
-import { CurrencyAmount, Token } from '@topazdex/sdk-core'
+import { CurrencyAmount, getChainConfig, Token } from '@topazdex/sdk-core'
 import { Pool as V2Pool } from '@topazdex/v2-sdk'
 import { Pool as CLPool } from '@topazdex/v3-sdk'
 
-import { CL_FACTORY_ADDRESS, POOL_FACTORY_ADDRESS, POOL_STATE_BATCH_SIZE } from '../constants'
+import { POOL_STATE_BATCH_SIZE } from '../constants'
 import { MulticallProvider } from './multicall'
-import { CLSubgraphPool, V2SubgraphPool } from './subgraph'
+import { CLSubgraphPool, SubgraphToken, V2SubgraphPool } from './subgraph'
+import { TokenProvider } from './token-provider'
 
 const V2_POOL_INTERFACE = new Interface([
   'function metadata() view returns (uint256 dec0, uint256 dec1, uint256 r0, uint256 r1, bool st, address t0, address t1)'
 ])
-const V2_FACTORY_INTERFACE = new Interface([
-  'function getFee(address pool, bool stable) view returns (uint256)'
-])
+const V2_FACTORY_INTERFACE = new Interface(['function getFee(address pool, bool stable) view returns (uint256)'])
 const CL_POOL_INTERFACE = new Interface([
   'function slot0() view returns (uint160 sqrtPriceX96, int24 tick, uint16 observationIndex, uint16 observationCardinality, uint16 observationCardinalityNext, bool unlocked)',
   'function liquidity() view returns (uint128)'
@@ -23,10 +22,6 @@ export interface PoolProviderOptions {
   blockTag?: number | string
 }
 
-function toToken(chainId: number, token: { id: string; symbol: string; decimals: string }): Token {
-  return new Token(chainId, token.id, Number(token.decimals), token.symbol)
-}
-
 /**
  * Turns subgraph pool descriptors into SDK pools backed by live chain state.
  *
@@ -35,17 +30,31 @@ function toToken(chainId: number, token: { id: string; symbol: string; decimals:
  * you the default.
  */
 export class PoolProvider {
+  private readonly tokens: TokenProvider
   public constructor(
     private readonly chainId: number,
     private readonly multicall: MulticallProvider,
-    private readonly v2FactoryAddress: string = POOL_FACTORY_ADDRESS,
-    private readonly clFactoryAddress: string = CL_FACTORY_ADDRESS
-  ) {}
+    private readonly v2FactoryAddress: string = getChainConfig(chainId).v2FactoryAddress,
+    private readonly clFactoryAddress: string = getChainConfig(chainId).clFactoryAddress
+  ) {
+    this.tokens = new TokenProvider(multicall, chainId)
+  }
+
+  private async toToken(token: SubgraphToken): Promise<Token> {
+    if (token.decimals === null) return this.tokens.getToken(token.id)
+    return new Token(this.chainId, token.id, Number(token.decimals), token.symbol ?? undefined)
+  }
 
   public async getV2Pools(pools: V2SubgraphPool[], options: PoolProviderOptions = {}): Promise<V2Pool[]> {
     if (pools.length === 0) return []
 
-    const calls = pools.flatMap(pool => [
+    for (const pool of pools) {
+      const [token0, token1] = await Promise.all([this.toToken(pool.token0), this.toToken(pool.token1)])
+      const address = V2Pool.getAddress(token0, token1, pool.stable)
+      if (address.toLowerCase() !== pool.id.toLowerCase())
+        throw new Error(`Unexpected v2 pool ${pool.id} on chain ${this.chainId}`)
+    }
+    const calls = pools.flatMap((pool) => [
       { target: pool.id, callData: V2_POOL_INTERFACE.encodeFunctionData('metadata') },
       {
         target: this.v2FactoryAddress,
@@ -63,13 +72,16 @@ export class PoolProvider {
       const metadataResult = results[i * 2]
       const feeResult = results[i * 2 + 1]
       if (!metadataResult?.success || !feeResult?.success) continue
+      // A graph can contain pools created after the requested block. Calls to an address with
+      // no code succeed with empty data in Multicall3, so success alone is not sufficient.
+      if (metadataResult.returnData === '0x' || feeResult.returnData === '0x') continue
 
       const metadata = V2_POOL_INTERFACE.decodeFunctionResult('metadata', metadataResult.returnData)
       const [fee] = V2_FACTORY_INTERFACE.decodeFunctionResult('getFee', feeResult.returnData)
       if (metadata.r0.isZero() || metadata.r1.isZero()) continue
 
-      const token0 = toToken(this.chainId, pool.token0)
-      const token1 = toToken(this.chainId, pool.token1)
+      const token0 = await this.toToken(pool.token0)
+      const token1 = await this.toToken(pool.token1)
       const [sorted0, sorted1] =
         token0.address.toLowerCase() === metadata.t0.toLowerCase() ? [token0, token1] : [token1, token0]
 
@@ -88,7 +100,13 @@ export class PoolProvider {
   public async getCLPools(pools: CLSubgraphPool[], options: PoolProviderOptions = {}): Promise<CLPool[]> {
     if (pools.length === 0) return []
 
-    const calls = pools.flatMap(pool => [
+    for (const pool of pools) {
+      const [token0, token1] = await Promise.all([this.toToken(pool.token0), this.toToken(pool.token1)])
+      const address = CLPool.getAddress(token0, token1, pool.tickSpacing)
+      if (address.toLowerCase() !== pool.id.toLowerCase())
+        throw new Error(`Unexpected CL pool ${pool.id} on chain ${this.chainId}`)
+    }
+    const calls = pools.flatMap((pool) => [
       { target: pool.id, callData: CL_POOL_INTERFACE.encodeFunctionData('slot0') },
       { target: pool.id, callData: CL_POOL_INTERFACE.encodeFunctionData('liquidity') },
       {
@@ -108,6 +126,7 @@ export class PoolProvider {
       const liquidityResult = results[i * 3 + 1]
       const feeResult = results[i * 3 + 2]
       if (!slot0Result?.success || !liquidityResult?.success || !feeResult?.success) continue
+      if ([slot0Result, liquidityResult, feeResult].some((result) => result.returnData === '0x')) continue
 
       const slot0 = CL_POOL_INTERFACE.decodeFunctionResult('slot0', slot0Result.returnData)
       const [liquidity] = CL_POOL_INTERFACE.decodeFunctionResult('liquidity', liquidityResult.returnData)
@@ -116,8 +135,8 @@ export class PoolProvider {
 
       built.push(
         new CLPool(
-          toToken(this.chainId, pool.token0),
-          toToken(this.chainId, pool.token1),
+          await this.toToken(pool.token0),
+          await this.toToken(pool.token1),
           Number(fee.toString()),
           pool.tickSpacing,
           slot0.sqrtPriceX96.toString(),

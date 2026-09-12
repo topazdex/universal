@@ -4,6 +4,10 @@ HTTP quote service over [`@topazdex/smart-order-router`](../smart-order-router).
 amount it returns the best route across Topaz CL and Topaz v2 pools, and — when a recipient is
 supplied — the Universal Router calldata that executes it.
 
+See [multichain configuration](../../docs/MULTICHAIN.md) to serve BNB, Robinhood, Base, Ethereum and future deployments from one API.
+
+See [routing hardening](../../ROUTING_API_HARDENING.md) for validation, quotas, deadlines and private RPC overrides. These changes are committed locally and are **not deployed**.
+
 ## Running
 
 ```bash
@@ -25,16 +29,17 @@ signing and execution end to end.
 
 | parameter | required | description |
 | --- | --- | --- |
-| `tokenIn` | yes | address, or `BNB` / `native` for native BNB |
-| `tokenOut` | yes | address, or `BNB` / `native` |
+| `chainId` | no | enabled EVM chain ID; defaults to the server default |
+| `tokenIn` | yes | ERC20 address, `native`, or the selected chain’s native symbol |
+| `tokenOut` | yes | ERC20 address, `native`, or the selected chain’s native symbol |
 | `amount` | yes | integer in the smallest unit of the specified token |
 | `type` | no | `exactIn` (default) or `exactOut` |
 | `recipient` | no | supplying it returns executable `methodParameters` |
-| `slippageBips` | no | default 50 (0.5%) |
+| `slippageBips` | no | integer 0–5000; default 50 (0.5%) |
 | `permit` | no | a signed Permit2 `PermitSingle`, POST only |
 | `permitGrantedInBatch` | no | the Permit2 allowance arrives earlier in the same EIP-5792 batch: return permit-free calldata, ignore any `permit` |
-| `deadlineSeconds` | no | default 1800 |
-| `maxHops`, `maxSplits`, `distributionPercent`, `includeMixedRoutes` | no | routing knobs, see the SOR README |
+| `deadlineSeconds` | no | integer 30–3600; default 1800 |
+| `maxHops`, `maxSplits`, `distributionPercent`, `includeMixedRoutes` | no | maxHops 1–3, maxSplits 1–4, distributionPercent 5/10/20/25/50/100; includeMixedRoutes is boolean |
 
 ```bash
 curl 'localhost:3000/quote?tokenIn=BNB&tokenOut=0x55d398326f99059fF775485246999027B3197955&amount=1000000000000000000&type=exactIn&recipient=0xYourAddress'
@@ -42,6 +47,7 @@ curl 'localhost:3000/quote?tokenIn=BNB&tokenOut=0x55d398326f99059fF7754852469990
 
 ```jsonc
 {
+  "chainId": 56,
   "blockNumber": 116350000,
   "tradeType": "exactIn",
   "amount": "1000000000000000000",

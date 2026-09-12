@@ -1,12 +1,13 @@
 import { isCLPool, Protocol } from '@topazdex/router-sdk'
-import { BNB, Currency, CurrencyAmount, Percent, Token, TradeType } from '@topazdex/sdk-core'
+import { nativeOnChain, Currency, CurrencyAmount, Percent, Token, TradeType } from '@topazdex/sdk-core'
 import { RoutingConfig, SwapRoute, TokenProvider, TopazRouter } from '@topazdex/smart-order-router'
 import { Pool as V2Pool } from '@topazdex/v2-sdk'
 import { Pool as CLPool } from '@topazdex/v3-sdk'
 
 import { ResponseCache } from './cache'
+import { withQuoteBudget } from './work-budget'
 
-export const NATIVE_ALIASES = new Set(['bnb', 'native', '0x0000000000000000000000000000000000000000'])
+export const NATIVE_ALIASES = new Set(['native', '0x0000000000000000000000000000000000000000'])
 
 /** Anything the caller can fix by changing the request, as opposed to a fault on our side */
 export class BadRequestError extends Error {
@@ -70,6 +71,7 @@ export interface QuoteResponseRoute {
 }
 
 export interface QuoteResponse {
+  chainId: number
   blockNumber: number
   tradeType: 'exactIn' | 'exactOut'
   amount: string
@@ -100,7 +102,8 @@ export class QuoteService {
     private readonly chainId: number,
     /** Overrides the default routing hubs; resolved on first use */
     private readonly baseTokenAddresses?: string[],
-    private readonly cache: ResponseCache<QuoteResponse | null> = new ResponseCache()
+    private readonly cache: ResponseCache<QuoteResponse | null> = new ResponseCache(),
+    private readonly beforeQuote?: () => Promise<void>
   ) {}
 
   public async quote(request: QuoteRequest): Promise<QuoteResponse | null> {
@@ -119,13 +122,18 @@ export class QuoteService {
       return { value: await this.computeQuote(request), hit: false, ageMs: 0 }
     }
     return this.cache.resolveWithOutcome(
-      cacheKey(request),
+      cacheKey(request, this.chainId),
       () => this.computeQuote(request),
       request.skipCache === true
     )
   }
 
-  private async computeQuote(request: QuoteRequest): Promise<QuoteResponse | null> {
+  private computeQuote(request: QuoteRequest): Promise<QuoteResponse | null> {
+    return withQuoteBudget(() => this.computeQuoteBody(request))
+  }
+
+  private async computeQuoteBody(request: QuoteRequest): Promise<QuoteResponse | null> {
+    await this.beforeQuote?.()
     const [currencyIn, currencyOut] = await Promise.all([
       this.resolveCurrency(request.tokenIn),
       this.resolveCurrency(request.tokenOut)
@@ -168,23 +176,28 @@ export class QuoteService {
     // resolved once and reused: decimals require a chain read
     this.baseTokens ??= this.tokenProvider
       .getTokens(this.baseTokenAddresses as string[])
-      .then(resolved => [...resolved.values()])
+      .then((resolved) => [...resolved.values()])
+      .catch(error => { this.baseTokens = undefined; throw error })
     return this.baseTokens
   }
 
   private async resolveCurrency(identifier: string): Promise<Currency> {
-    if (NATIVE_ALIASES.has(identifier.toLowerCase())) return BNB.onChain(this.chainId)
+    const native = nativeOnChain(this.chainId)
+    if (NATIVE_ALIASES.has(identifier.toLowerCase()) || identifier.toLowerCase() === native.symbol?.toLowerCase())
+      return native
     try {
       return await this.tokenProvider.getToken(identifier)
     } catch (error) {
-      throw new BadRequestError(`could not resolve token ${identifier} as an ERC20 on this chain`)
+      if (error instanceof Error && error.message.startsWith('could not resolve token')) throw new BadRequestError(`could not resolve token ${identifier} as an ERC20 on this chain`)
+      throw error
     }
   }
 }
 
 /** Everything that changes the response, including what ends up inside the calldata */
-function cacheKey(request: QuoteRequest): string {
+function cacheKey(request: QuoteRequest, chainId: number): string {
   return JSON.stringify([
+    chainId,
     request.tokenIn.toLowerCase(),
     request.tokenOut.toLowerCase(),
     request.amount,
@@ -206,6 +219,7 @@ function serialize(
   const slippage = new Percent(slippageBips, 10_000)
 
   return {
+    chainId: amount.currency.chainId,
     blockNumber: route.blockNumber,
     tradeType: exactIn ? 'exactIn' : 'exactOut',
     amount: amount.quotient.toString(),
@@ -218,7 +232,7 @@ function serialize(
       : { maximumAmountIn: route.trade.maximumAmountIn(slippage).quotient.toString() }),
     gasUseEstimate: route.estimatedGasUsed.toString(),
     gasUseEstimateQuote: route.estimatedGasUsedQuoteToken.quotient.toString(),
-    routes: route.routes.map(entry => ({
+    routes: route.routes.map((entry) => ({
       protocol: entry.route.protocol,
       percent: entry.percent,
       amountIn: (exactIn ? entry.amount : entry.quote).quotient.toString(),

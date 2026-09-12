@@ -26,6 +26,8 @@ export const PUBLIC_BSC_RPC_URLS: string[] = [
 
 export interface FallbackRpcProviderOptions {
   chainId?: number
+  /** Verify every endpoint before using its state. Enabled by the routing API. */
+  validateChainId?: boolean
   /** Per request, per endpoint */
   timeoutMs?: number
   /** How long a failing endpoint is skipped */
@@ -42,6 +44,7 @@ interface Endpoint {
   url: string
   provider: StaticJsonRpcProvider
   skipUntil: number
+  networkCheck?: Promise<void>
 }
 
 /**
@@ -65,6 +68,8 @@ export class FallbackRpcProvider extends StaticJsonRpcProvider {
   private readonly maxAttempts: number
   private readonly headCacheMs: number
   private readonly headDeadlineMs: number
+  private readonly validateChainId: boolean
+  private headPending: Promise<number> | undefined
   private head: { value: number; at: number } | undefined
 
   /**
@@ -78,30 +83,33 @@ export class FallbackRpcProvider extends StaticJsonRpcProvider {
     const first = endpoints[0]
     super({ url: typeof first === 'string' ? first : first.connection.url, timeout }, chainId)
 
-    this.endpoints = endpoints.map(endpoint => ({
+    this.endpoints = endpoints.map((endpoint) => ({
       url: typeof endpoint === 'string' ? endpoint : endpoint.connection.url,
-      provider: typeof endpoint === 'string' ? new StaticJsonRpcProvider({ url: endpoint, timeout }, chainId) : endpoint,
+      provider:
+        typeof endpoint === 'string' ? new StaticJsonRpcProvider({ url: endpoint, timeout }, chainId) : endpoint,
       skipUntil: 0
     }))
     this.cooldownMs = options.cooldownMs ?? 30_000
     this.maxAttempts = options.maxAttempts ?? Math.min(4, endpoints.length)
     this.headCacheMs = options.headCacheMs ?? 2_000
     this.headDeadlineMs = options.headDeadlineMs ?? 1_500
+    this.validateChainId = options.validateChainId ?? false
   }
 
   public get urls(): string[] {
-    return this.endpoints.map(endpoint => endpoint.url)
+    return this.endpoints.map((endpoint) => endpoint.url)
   }
 
   public async send(method: string, params: Array<unknown>): Promise<unknown> {
     const now = Date.now()
-    const healthy = this.endpoints.filter(endpoint => endpoint.skipUntil <= now)
+    const healthy = this.endpoints.filter((endpoint) => endpoint.skipUntil <= now)
     // every endpoint is cooling down: better to retry them than to fail outright
     const order = healthy.length > 0 ? healthy : this.endpoints
 
     let lastError: unknown
     for (const endpoint of order.slice(0, this.maxAttempts)) {
       try {
+        await this.verifyEndpoint(endpoint)
         return await endpoint.provider.send(method, params)
       } catch (error) {
         if (isDeterministic(error)) throw error
@@ -114,15 +122,19 @@ export class FallbackRpcProvider extends StaticJsonRpcProvider {
 
   /** The highest block every endpoint that answered promptly can serve */
   public async getBlockNumber(): Promise<number> {
+    return this.headPending ??= this.fetchHead().finally(() => { this.headPending = undefined })
+  }
+
+  private async fetchHead(): Promise<number> {
     const now = Date.now()
     if (this.head && now - this.head.at < this.headCacheMs) return this.head.value
 
-    const asked = this.endpoints.filter(endpoint => endpoint.skipUntil <= now)
-    const pending = (asked.length > 0 ? asked : this.endpoints).map(endpoint => this.headOf(endpoint))
+    const asked = this.endpoints.filter((endpoint) => endpoint.skipUntil <= now)
+    const pending = (asked.length > 0 ? asked : this.endpoints).map((endpoint) => this.headOf(endpoint))
 
     // an endpoint that cannot answer this within the deadline is no use for quoting either, so
     // proceed with whoever replied rather than letting the slowest one gate the request
-    const known = (await Promise.all(pending.map(head => withDeadline(head, this.headDeadlineMs)))).filter(
+    const known = (await Promise.all(pending.map((head) => withDeadline(head, this.headDeadlineMs)))).filter(
       (value): value is number => typeof value === 'number'
     )
 
@@ -134,6 +146,7 @@ export class FallbackRpcProvider extends StaticJsonRpcProvider {
 
   private async headOf(endpoint: Endpoint): Promise<number | undefined> {
     try {
+      await this.verifyEndpoint(endpoint)
       const result = await endpoint.provider.send('eth_blockNumber', [])
       const head = Number.parseInt(result as string, 16)
       return Number.isFinite(head) ? head : undefined
@@ -141,6 +154,20 @@ export class FallbackRpcProvider extends StaticJsonRpcProvider {
       endpoint.skipUntil = Date.now() + this.cooldownMs
       return undefined
     }
+  }
+
+  private async verifyEndpoint(endpoint: Endpoint): Promise<void> {
+    if (!this.validateChainId) return
+    await (endpoint.networkCheck ??= endpoint.provider
+      .send('eth_chainId', [])
+      .then((actual) => {
+        if (Number(actual) !== this.network.chainId)
+          throw new Error(`RPC chain does not match configured chain ${this.network.chainId}`)
+      })
+      .catch((error) => {
+        endpoint.networkCheck = undefined
+        throw error
+      }))
   }
 
   public async detectNetwork(): Promise<Network> {
@@ -154,7 +181,7 @@ async function withDeadline<T>(promise: Promise<T>, ms: number): Promise<T | und
   try {
     return await Promise.race([
       promise,
-      new Promise<undefined>(resolve => {
+      new Promise<undefined>((resolve) => {
         timer = setTimeout(() => resolve(undefined), ms)
       })
     ])
@@ -164,10 +191,15 @@ async function withDeadline<T>(promise: Promise<T>, ms: number): Promise<T | und
 }
 
 async function firstResolved(pending: Promise<number | undefined>[]): Promise<number> {
-  const results = await Promise.all(pending)
-  const known = results.filter((value): value is number => typeof value === 'number')
-  if (known.length === 0) throw new Error('no healthy RPC endpoint could report a block number')
-  return Math.min(...known)
+  return new Promise((resolve, reject) => {
+    let remaining = pending.length
+    for (const promise of pending) promise.then(value => {
+      if (typeof value === 'number') resolve(value)
+      if (--remaining === 0) reject(new Error('no healthy RPC endpoint could report a block number'))
+    }, () => {
+      if (--remaining === 0) reject(new Error('no healthy RPC endpoint could report a block number'))
+    })
+  })
 }
 
 /**
@@ -185,8 +217,6 @@ function isDeterministic(error: unknown): boolean {
     return false
   }
   return (
-    message.includes('execution reverted') ||
-    message.includes('out of gas') ||
-    message.includes('gas required exceeds')
+    message.includes('execution reverted') || message.includes('out of gas') || message.includes('gas required exceeds')
   )
 }

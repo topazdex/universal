@@ -7,11 +7,11 @@ import {
   MixedRouteQuoter,
   Protocol
 } from '@topazdex/router-sdk'
-import { Currency, CurrencyAmount, TradeType } from '@topazdex/sdk-core'
+import { Currency, CurrencyAmount, getChainConfig, TradeType } from '@topazdex/sdk-core'
 import { Pool as V2Pool } from '@topazdex/v2-sdk'
 import { Route as CLRoute, SwapQuoter } from '@topazdex/v3-sdk'
 
-import { MIXED_ROUTE_QUOTER_V1_ADDRESS, QUOTER_V2_ADDRESS } from '../constants'
+import { TOPAZ_CHAIN_ID } from '../constants'
 import { MulticallProvider } from './multicall'
 
 export interface AmountToQuote {
@@ -47,9 +47,14 @@ export interface QuoteProviderOptions {
 export class QuoteProvider {
   public constructor(
     private readonly multicall: MulticallProvider,
-    private readonly mixedQuoterAddress: string = MIXED_ROUTE_QUOTER_V1_ADDRESS,
-    private readonly quoterV2Address: string = QUOTER_V2_ADDRESS
-  ) {}
+    private readonly mixedQuoterAddress: string | undefined = undefined,
+    private readonly quoterV2Address: string | undefined = undefined,
+    private readonly chainId: number = TOPAZ_CHAIN_ID
+  ) {
+    const config = getChainConfig(chainId)
+    this.mixedQuoterAddress = mixedQuoterAddress ?? config.mixedQuoterAddress
+    this.quoterV2Address = quoterV2Address ?? config.quoterV2Address
+  }
 
   public async getQuotes(
     routes: AnyRoute<Currency, Currency>[],
@@ -67,6 +72,8 @@ export class QuoteProvider {
     amounts: AmountToQuote[],
     options: QuoteProviderOptions
   ): Promise<RouteWithQuote[]> {
+    if (routes.length === 0) return []
+    if (!this.mixedQuoterAddress) throw new Error(`MixedRouteQuoterV1 is not configured for chain ${this.chainId}`)
     const pairs: { route: AnyRoute<Currency, Currency>; entry: AmountToQuote }[] = []
     const calls = []
 
@@ -124,10 +131,10 @@ export class QuoteProvider {
     const quotes: RouteWithQuote[] = []
 
     // volatile v2 routes invert in closed form, so they are priced locally rather than on chain
-    const localRoutes = routes.filter(route => route.protocol === Protocol.V2)
+    const localRoutes = routes.filter((route) => route.protocol === Protocol.V2)
     for (const route of localRoutes) {
       const pools = route.pools as V2Pool[]
-      if (pools.some(pool => pool.stable)) continue
+      if (pools.some((pool) => pool.stable)) continue
       for (const entry of amounts) {
         try {
           let amount = entry.amount
@@ -147,7 +154,9 @@ export class QuoteProvider {
       }
     }
 
-    const clRoutes = routes.filter(route => route.protocol === Protocol.CL)
+    const clRoutes = routes.filter((route) => route.protocol === Protocol.CL)
+    if (clRoutes.length && !this.quoterV2Address)
+      throw new Error(`QuoterV2 is not configured for chain ${this.chainId}`)
     const pairs: { route: AnyRoute<Currency, Currency>; entry: AmountToQuote }[] = []
     const calls = []
 
@@ -159,7 +168,7 @@ export class QuoteProvider {
           entry.amount,
           TradeType.EXACT_OUTPUT
         )
-        calls.push({ target: this.quoterV2Address, callData: calldata })
+        calls.push({ target: this.quoterV2Address!, callData: calldata })
       }
     }
 
@@ -209,5 +218,5 @@ export function routeSupportsTradeType(route: AnyRoute<Currency, Currency>, trad
   if (tradeType === TradeType.EXACT_INPUT) return true
   if (route.protocol === Protocol.MIXED) return false
   if (route.protocol === Protocol.CL) return true
-  return !(route.pools as V2Pool[]).some(pool => !isCLPool(pool) && pool.stable)
+  return !(route.pools as V2Pool[]).some((pool) => !isCLPool(pool) && pool.stable)
 }

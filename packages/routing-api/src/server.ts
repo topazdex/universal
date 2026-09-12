@@ -1,5 +1,6 @@
-import { BaseProvider, StaticJsonRpcProvider } from '@ethersproject/providers'
-import { TradeType } from '@topazdex/sdk-core'
+import { readFileSync } from 'fs'
+import { StaticJsonRpcProvider } from '@ethersproject/providers'
+import { ChainDeployment, getChainConfig, registerChain, TradeType } from '@topazdex/sdk-core'
 import {
   FallbackRpcProvider,
   MulticallProvider,
@@ -10,6 +11,9 @@ import {
 import express, { Express, NextFunction, Request, Response } from 'express'
 
 import { ResponseCache } from './cache'
+import { BoundedRpcProvider } from './bounded-rpc'
+import { quoteProtection } from './protection'
+import { WorkLimitError } from './work-budget'
 import { BadRequestError, QuotePermit, QuoteResponse, QuoteService } from './quote'
 
 /**
@@ -40,47 +44,95 @@ function compileWildcard(pattern: string): RegExp {
   return new RegExp(`^${escaped.replace(/\\\*/g, '[a-z0-9-]+(?:\\.[a-z0-9-]+)*')}$`)
 }
 
-export interface ServerConfig {
+export interface ChainServerConfig {
   /** One endpoint, or several to fail over between. Defaults to the public list. */
   rpcUrl?: string
   rpcUrls?: string[]
   chainId?: number
   universalRouterAddress?: string
+  subgraphUrl?: string
+  /** How long discovered pool lists are reused; live pool state is always fetched again. */
+  subgraphCacheTtlMs?: number
+  /** Public deployment metadata. Required in full for a new chain; overrides known deployments. */
+  deployment?: Partial<ChainDeployment>
   /** Quote calls per eth_call. Lower it if the RPC rejects batches on gas. */
   multicallBatchSize?: number
   /** eth_calls in flight at once. Lower it if the RPC rate limits you. */
   multicallConcurrency?: number
   /** Token addresses the router may hop through, overriding the defaults */
   baseTokens?: string[]
-  /** Browser origins allowed to call this API. `['*']` allows any. */
-  corsOrigins?: string[]
-  /** How long an identical quote is reused. 0 disables it. Default 2000ms, about two blocks. */
+  /** How long an identical quote is reused; 0 disables caching. */
   quoteCacheTtlMs?: number
 }
 
+export interface ServerConfig extends ChainServerConfig {
+  /** Enabled chains. Omit for the legacy single-chain server. */
+  chains?: ChainServerConfig[]
+  corsOrigins?: string[]
+}
+
 export function createApp(config: ServerConfig): Express {
-  const chainId = config.chainId ?? 56
-  const provider = buildProvider(config, chainId)
-  const multicall = new MulticallProvider(provider, {
-    batchSize: config.multicallBatchSize,
-    concurrency: config.multicallConcurrency
-  })
-  const tokenProvider = new TokenProvider(multicall, chainId)
-  const router = new TopazRouter({
-    provider,
-    chainId,
-    multicallProvider: multicall,
-    universalRouterAddress: config.universalRouterAddress
-  })
-  const cache = new ResponseCache<QuoteResponse | null>({ ttlMs: config.quoteCacheTtlMs })
-  const quoteService = new QuoteService(router, tokenProvider, chainId, config.baseTokens, cache)
+  const chainId = config.chainId ?? config.chains?.[0]?.chainId ?? 56
+  const services = new Map<number, { quote: QuoteService; verifyNetwork: () => Promise<void> }>()
+  for (const entry of config.chains ?? [config]) {
+    const id = entry.chainId ?? chainId
+    if (!Number.isSafeInteger(id) || id <= 0 || services.has(id)) throw new Error(`Invalid or duplicate chainId ${id}`)
+    if (entry.deployment) {
+      let existing: Partial<ChainDeployment> = {}
+      try {
+        existing = getChainConfig(id)
+      } catch {
+        /* new deployment must supply every required field */
+      }
+      registerChain({ ...existing, ...entry.deployment, chainId: id } as ChainDeployment)
+    }
+    const chain = getChainConfig(id)
+    const provider = buildProvider(entry, id)
+    const multicall = new MulticallProvider(
+      provider,
+      {
+        batchSize: entry.multicallBatchSize,
+        concurrency: entry.multicallConcurrency
+      },
+      chain.multicallAddress
+    )
+    const tokenProvider = new TokenProvider(multicall, id)
+    const router = new TopazRouter({
+      provider,
+      chainId: id,
+      multicallProvider: multicall,
+      universalRouterAddress: entry.universalRouterAddress,
+      subgraphUrl: entry.subgraphUrl,
+      subgraphCacheTtlMs: entry.subgraphCacheTtlMs
+    })
+    const cache = new ResponseCache<QuoteResponse | null>({ ttlMs: entry.quoteCacheTtlMs ?? config.quoteCacheTtlMs })
+    let verified: Promise<void> | undefined
+    services.set(id, {
+      quote: new QuoteService(router, tokenProvider, id, entry.baseTokens, cache, async () => services.get(id)!.verifyNetwork()),
+      verifyNetwork: () =>
+        verified ??
+        (verified = provider
+          .send('eth_chainId', [])
+          .then((actual) => {
+            if (Number(actual) !== id) throw new Error(`RPC chain does not match configured chain ${id}`)
+          })
+          .catch((error) => {
+            verified = undefined
+            throw error
+          }))
+    })
+  }
+  if (!services.has(chainId)) throw new Error(`Default chain ${chainId} is not enabled`)
 
   const app = express()
-  app.use(express.json())
+  app.disable('x-powered-by')
+  app.set('query parser', 'simple')
   app.use(cors(config.corsOrigins ?? DEFAULT_CORS_ORIGINS))
+  app.use('/quote', quoteProtection())
+  app.use(express.json({ limit: '16kb', strict: true }))
 
   app.get('/health', (_request: Request, response: Response) => {
-    response.json({ status: 'ok', chainId })
+    response.json({ status: 'ok', chainId, ...(config.chains ? { chainIds: [...services.keys()] } : {}) })
   })
 
   // POST carries a Permit2 signature comfortably; GET stays for simple quotes and links
@@ -93,9 +145,15 @@ export function createApp(config: ServerConfig): Express {
   })
 
   async function handleQuote(source: QueryLike, response: Response, skipCache = false): Promise<void> {
+    response.locals.quoteStarted = true
     try {
       const params = { ...parseQuoteQuery(source), skipCache }
-      const { value, hit, ageMs } = await quoteService.quoteWithCacheOutcome(params)
+      const requestedChain = parseChainId(source.chainId, chainId)
+      const service = services.get(requestedChain)
+      if (!service) throw new BadRequestError(`Unsupported chainId ${requestedChain}`)
+      const nativeSymbol = getChainConfig(requestedChain).nativeCurrency.symbol.toLowerCase()
+      for (const token of [params.tokenIn, params.tokenOut]) if (['eth', 'bnb'].includes(token.toLowerCase()) && token.toLowerCase() !== nativeSymbol) throw new BadRequestError('Native alias does not match chain')
+      const { value, hit, ageMs } = await service.quote.quoteWithCacheOutcome(params)
       if (!value) {
         response.status(404).json({ error: 'No route found' })
         return
@@ -105,11 +163,18 @@ export function createApp(config: ServerConfig): Express {
       response.setHeader('Age', String(Math.floor(ageMs / 1000)))
       response.json(value)
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unknown error'
-      response.status(error instanceof BadRequestError ? 400 : 500).json({ error: message })
-    }
+      if (error instanceof BadRequestError) response.status(400).json({ error: error.message })
+      else if (error instanceof WorkLimitError) {
+        response.setHeader('Retry-After', '1')
+        response.status(error.code === 'quote_timeout' ? 504 : 503).json({ error: error.code })
+      } else response.status(502).json({ error: 'Quote provider unavailable' })
+    } finally { response.locals.releaseQuote?.() }
   }
 
+  app.use((error: { type?: string }, _request: Request, response: Response, _next: NextFunction) => {
+    response.locals.releaseQuote?.()
+    response.status(error.type === 'entity.too.large' ? 413 : 400).json({ error: 'Invalid request body' })
+  })
   return app
 }
 
@@ -123,15 +188,15 @@ export function createApp(config: ServerConfig): Express {
 function cors(origins: string[]) {
   const allowAll = origins.includes('*')
   const allowLoopback = origins.includes('localhost')
-  const allowed = new Set(origins.map(origin => origin.toLowerCase()))
+  const allowed = new Set(origins.map((origin) => origin.toLowerCase()))
   const patterns = origins
-    .filter(origin => origin !== '*' && origin.includes('*'))
-    .map(origin => compileWildcard(origin.toLowerCase()))
+    .filter((origin) => origin !== '*' && origin.includes('*'))
+    .map((origin) => compileWildcard(origin.toLowerCase()))
 
   function isAllowed(origin: string): boolean {
     if (allowAll || allowed.has(origin)) return true
     if (allowLoopback && isLoopback(origin)) return true
-    return patterns.some(pattern => pattern.test(origin))
+    return patterns.some((pattern) => pattern.test(origin))
   }
 
   return (request: Request, response: Response, next: NextFunction): void => {
@@ -169,10 +234,16 @@ function cors(origins: string[]) {
  * Static, not JsonRpcProvider: the latter issues an eth_chainId before every single request,
  * which doubles the request count for a quote that is otherwise all multicalls.
  */
-function buildProvider(config: ServerConfig, chainId: number): BaseProvider {
-  const urls = config.rpcUrls?.length ? config.rpcUrls : config.rpcUrl ? [config.rpcUrl] : PUBLIC_BSC_RPC_URLS
-  if (urls.length === 1) return new StaticJsonRpcProvider({ url: urls[0], timeout: 20_000 }, chainId)
-  return new FallbackRpcProvider(urls, { chainId })
+function buildProvider(config: ChainServerConfig, chainId: number): StaticJsonRpcProvider {
+  const urls = config.rpcUrls?.length
+    ? config.rpcUrls
+    : config.rpcUrl
+    ? [config.rpcUrl]
+    : chainId === 56
+    ? PUBLIC_BSC_RPC_URLS
+    : getChainConfig(chainId).rpcUrls
+  if (urls.length === 0) throw new Error(`RPC URL is not configured for chain ${chainId}`)
+  return new FallbackRpcProvider(urls.slice(0, 2).map(url => new BoundedRpcProvider(url, chainId)), { chainId, validateChainId: true, maxAttempts: 2 })
 }
 
 interface QueryLike {
@@ -192,46 +263,61 @@ function wantsFresh(request: Request): boolean {
   return source?.skipCache === true || source?.skipCache === 'true'
 }
 
-function parseQuoteQuery(query: QueryLike) {
+export function parseQuoteQuery(query: QueryLike) {
+  if (!query || typeof query !== 'object' || Array.isArray(query)) throw new BadRequestError('Expected a request object')
   const tokenIn = requireString(query, 'tokenIn')
   const tokenOut = requireString(query, 'tokenOut')
-  const amount = requireString(query, 'amount')
-  if (!/^\d+$/.test(amount)) throw new BadRequestError('amount must be an integer in the token’s smallest unit')
-
-  const type = (query.type as string | undefined)?.toLowerCase() ?? 'exactin'
+  for (const token of [tokenIn, tokenOut]) {
+    if (!/^(0x[0-9a-fA-F]{40}|native|BNB|ETH)$/i.test(token)) throw new BadRequestError('Invalid token address or native alias')
+  }
+  const amount = rawUint(requireString(query, 'amount'), 256, 'amount')
+  if (BigInt(amount) === 0n) throw new BadRequestError('amount must be positive')
+  const type = query.type === undefined ? 'exactin' : requireString(query, 'type').toLowerCase()
   if (type !== 'exactin' && type !== 'exactout') throw new BadRequestError('type must be exactIn or exactOut')
-
-  const recipient = query.recipient as string | undefined
-  const slippageBips = query.slippageBips ? Number(query.slippageBips) : undefined
-  if (slippageBips !== undefined && (!Number.isFinite(slippageBips) || slippageBips < 0 || slippageBips > 5_000)) {
-    throw new BadRequestError('slippageBips must be between 0 and 5000')
-  }
-
-  const permitGrantedInBatch = query.permitGrantedInBatch === true || query.permitGrantedInBatch === 'true'
-
-  const routingConfig = {
-    ...(query.maxHops ? { maxHops: Number(query.maxHops) } : {}),
-    ...(query.maxSplits ? { maxSplits: Number(query.maxSplits) } : {}),
-    ...(query.distributionPercent ? { distributionPercent: Number(query.distributionPercent) } : {}),
-    ...(query.includeMixedRoutes !== undefined
-      ? { includeMixedRoutes: query.includeMixedRoutes !== 'false' }
-      : {})
-  }
-
+  const recipient = query.recipient === undefined ? undefined : address(query.recipient, 'recipient')
+  const slippageBips = integer(query.slippageBips, 0, 5000, 'slippageBips')
+  const maxHops = integer(query.maxHops, 1, 3, 'maxHops')
+  const maxSplits = integer(query.maxSplits, 1, 4, 'maxSplits')
+  const distributionPercent = integer(query.distributionPercent, 5, 100, 'distributionPercent')
+  if (distributionPercent !== undefined && 100 % distributionPercent !== 0) throw new BadRequestError('distributionPercent must divide 100')
+  const includeMixedRoutes = boolean(query.includeMixedRoutes, 'includeMixedRoutes')
+  const permitGrantedInBatch = boolean(query.permitGrantedInBatch, 'permitGrantedInBatch')
+  boolean(query.skipCache, 'skipCache')
   return {
-    tokenIn,
-    tokenOut,
-    amount,
+    tokenIn, tokenOut, amount, recipient, slippageBips,
     tradeType: type === 'exactin' ? TradeType.EXACT_INPUT : TradeType.EXACT_OUTPUT,
-    recipient,
-    slippageBips,
-    deadlineSeconds: query.deadlineSeconds ? Number(query.deadlineSeconds) : undefined,
-    // a permit alongside the in-batch grant is ignored outright, not validated: the batch
-    // supersedes it, so a client that sent both by mistake still gets its quote
+    deadlineSeconds: integer(query.deadlineSeconds, 30, 3600, 'deadlineSeconds'),
     permit: permitGrantedInBatch ? undefined : parsePermit(query.permit),
     permitGrantedInBatch,
-    routingConfig
+    routingConfig: {
+      ...(maxHops === undefined ? {} : { maxHops }),
+      ...(maxSplits === undefined ? {} : { maxSplits }),
+      ...(distributionPercent === undefined ? {} : { distributionPercent }),
+      ...(includeMixedRoutes === undefined ? {} : { includeMixedRoutes })
+    }
   }
+}
+
+function integer(value: unknown, min: number, max: number, name: string): number | undefined {
+  if (value === undefined) return undefined
+  if ((typeof value !== 'number' && typeof value !== 'string') || !/^[0-9]+$/.test(String(value))) throw new BadRequestError(`${name} must be an integer`)
+  const n = Number(value)
+  if (!Number.isSafeInteger(n) || n < min || n > max) throw new BadRequestError(`${name} must be between ${min} and ${max}`)
+  return n
+}
+function boolean(value: unknown, name: string): boolean | undefined {
+  if (value === undefined) return undefined
+  if (value === true || value === 'true') return true
+  if (value === false || value === 'false') return false
+  throw new BadRequestError(`${name} must be true or false`)
+}
+function address(value: unknown, name: string): string {
+  if (typeof value !== 'string' || !/^0x[0-9a-fA-F]{40}$/.test(value)) throw new BadRequestError(`${name} must be an address`)
+  return value
+}
+function rawUint(value: unknown, bits: number, name: string): string {
+  if ((typeof value !== 'string' && typeof value !== 'number') || (typeof value === 'number' && !Number.isSafeInteger(value)) || !/^[0-9]{1,78}$/.test(String(value)) || BigInt(value) >= 2n ** BigInt(bits)) throw new BadRequestError(`${name} must be uint${bits}`)
+  return String(value)
 }
 
 function parsePermit(value: unknown): QuotePermit | undefined {
@@ -246,7 +332,13 @@ function parsePermit(value: unknown): QuotePermit | undefined {
   }
   if (!permit.spender) throw new BadRequestError('permit.spender is required')
   if (permit.sigDeadline === undefined) throw new BadRequestError('permit.sigDeadline is required')
-  if (typeof permit.signature !== 'string' || !/^0x[0-9a-fA-F]+$/.test(permit.signature)) {
+  address(details.token, 'permit.details.token')
+  address(permit.spender, 'permit.spender')
+  rawUint(details.amount, 160, 'permit.details.amount')
+  rawUint(details.expiration, 48, 'permit.details.expiration')
+  rawUint(details.nonce, 48, 'permit.details.nonce')
+  rawUint(permit.sigDeadline, 256, 'permit.sigDeadline')
+  if (typeof permit.signature !== 'string' || !/^0x(?:[0-9a-fA-F]{2}){1,4096}$/.test(permit.signature)) {
     throw new BadRequestError('permit.signature must be a hex string')
   }
 
@@ -259,42 +351,61 @@ function requireString(query: QueryLike, key: string): string {
   return value
 }
 
-if (require.main === module) {
-  // BSC_MAINNET_RPC for one endpoint, BSC_RPC_URLS for a comma separated failover list
-  const rpcUrls = (process.env.BSC_RPC_URLS ?? process.env.BSC_MAINNET_RPC ?? '')
-    .split(',')
-    .map(url => url.trim())
-    .filter(Boolean)
-
-  if (rpcUrls.length === 0) {
-    // eslint-disable-next-line no-console
-    console.warn(
-      `No BSC_MAINNET_RPC or BSC_RPC_URLS set, falling back to ${PUBLIC_BSC_RPC_URLS.length} public endpoints. ` +
-        'Expect quotes several times slower than on a paid endpoint.'
-    )
+function parseChainId(value: unknown, fallback: number): number {
+  if (value === undefined) return fallback
+  if ((typeof value !== 'string' && typeof value !== 'number') || !/^[0-9]+$/.test(String(value))) {
+    throw new BadRequestError('chainId must be a positive integer')
   }
+  const chainId = Number(value)
+  if (!Number.isSafeInteger(chainId) || chainId <= 0) throw new BadRequestError('chainId must be a positive integer')
+  return chainId
+}
 
-  const port = Number(process.env.PORT ?? 3000)
-  const app = createApp({
-    rpcUrls,
-    chainId: process.env.CHAIN_ID ? Number(process.env.CHAIN_ID) : undefined,
-    universalRouterAddress: process.env.UNIVERSAL_ROUTER_ADDRESS,
-    multicallBatchSize: process.env.MULTICALL_BATCH_SIZE ? Number(process.env.MULTICALL_BATCH_SIZE) : undefined,
-    multicallConcurrency: process.env.MULTICALL_CONCURRENCY ? Number(process.env.MULTICALL_CONCURRENCY) : undefined,
-    baseTokens: (process.env.ROUTING_BASE_TOKENS ?? '')
-      .split(',')
-      .map(address => address.trim())
+/** Load one chain from environment variables, or several from a JSON server configuration. */
+export function serverConfigFromEnv(env: NodeJS.ProcessEnv = process.env): ServerConfig {
+  if (env.CHAINS_CONFIG_FILE) {
+    const config = JSON.parse(readFileSync(env.CHAINS_CONFIG_FILE, 'utf8')) as ServerConfig
+    for (const chain of config.chains ?? [config]) {
+      const override = env[`ROUTING_RPC_URLS_${chain.chainId ?? config.chainId ?? 56}`]
+      if (override) chain.rpcUrls = override.split(',').map(url => url.trim()).filter(Boolean)
+    }
+    return config
+  }
+  const chainId = env.CHAIN_ID ? Number(env.CHAIN_ID) : 56
+  const rpc = env.RPC_URLS ?? env.RPC_URL ?? (chainId === 56 ? env.BSC_RPC_URLS ?? env.BSC_MAINNET_RPC : undefined)
+  return {
+    chainId,
+    rpcUrls: rpc
+      ?.split(',')
+      .map((url) => url.trim())
       .filter(Boolean),
-    quoteCacheTtlMs: process.env.QUOTE_CACHE_TTL_MS ? Number(process.env.QUOTE_CACHE_TTL_MS) : undefined,
-    corsOrigins: process.env.CORS_ORIGINS
-      ? process.env.CORS_ORIGINS.split(',')
-          .map(origin => origin.trim())
-          .filter(Boolean)
-      : undefined
-  })
+    subgraphUrl: env.SUBGRAPH_URL,
+    subgraphCacheTtlMs: env.SUBGRAPH_CACHE_TTL_MS ? Number(env.SUBGRAPH_CACHE_TTL_MS) : undefined,
+    universalRouterAddress: env.UNIVERSAL_ROUTER_ADDRESS,
+    multicallBatchSize: env.MULTICALL_BATCH_SIZE ? Number(env.MULTICALL_BATCH_SIZE) : undefined,
+    multicallConcurrency: env.MULTICALL_CONCURRENCY ? Number(env.MULTICALL_CONCURRENCY) : undefined,
+    baseTokens: env.ROUTING_BASE_TOKENS?.split(',')
+      .map((address) => address.trim())
+      .filter(Boolean),
+    quoteCacheTtlMs: env.QUOTE_CACHE_TTL_MS ? Number(env.QUOTE_CACHE_TTL_MS) : undefined,
+    corsOrigins: env.CORS_ORIGINS?.split(',')
+      .map((origin) => origin.trim())
+      .filter(Boolean)
+  }
+}
 
-  app.listen(port, () => {
+if (require.main === module) {
+  const port = Number(process.env.PORT ?? 3000)
+  const server = createApp(serverConfigFromEnv()).listen(port, () => {
     // eslint-disable-next-line no-console
     console.log(`topaz routing-api listening on :${port}`)
+  })
+  server.requestTimeout = 10_000
+  server.headersTimeout = 10_000
+  server.keepAliveTimeout = 5_000
+  server.maxHeadersCount = 64
+  process.on('SIGTERM', () => {
+    server.close(() => process.exit(0))
+    setTimeout(() => process.exit(1), 15_000).unref()
   })
 }

@@ -1,5 +1,5 @@
 import { Interface } from '@ethersproject/abi'
-import { BASE_TOKENS, Token } from '@topazdex/sdk-core'
+import { baseTokensOnChain, Token } from '@topazdex/sdk-core'
 
 import { TOPAZ_CHAIN_ID } from '../constants'
 import { MulticallProvider } from './multicall'
@@ -23,7 +23,7 @@ export class TokenProvider {
     private readonly multicall: MulticallProvider,
     private readonly chainId: number = TOPAZ_CHAIN_ID
   ) {
-    for (const token of BASE_TOKENS) {
+    for (const token of baseTokensOnChain(chainId)) {
       this.cache.set(token.address.toLowerCase(), token)
     }
   }
@@ -55,6 +55,7 @@ export class TokenProvider {
         }
 
         this.cache.set(address, new Token(this.chainId, address, Number(decimals), symbol))
+        if (this.cache.size > 2000) this.cache.delete(this.cache.keys().next().value as string)
       }
     }
 

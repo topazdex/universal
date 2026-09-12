@@ -46,7 +46,8 @@ export class MulticallProvider {
   public constructor(
     private readonly provider: BaseProvider,
     /** Defaults for every call, so batching can be tuned to an RPC provider without a rebuild */
-    private readonly defaults: MulticallOptions = {}
+    private readonly defaults: MulticallOptions = {},
+    private readonly address: string = MULTICALL3_ADDRESS
   ) {}
 
   public async call(calls: Call[], callOptions: MulticallOptions = {}): Promise<CallResult[]> {
@@ -56,6 +57,7 @@ export class MulticallProvider {
     const batchSize = options.batchSize ?? QUOTE_BATCH_SIZE
     const concurrency = options.concurrency ?? MULTICALL_CONCURRENCY
 
+    if (!Number.isSafeInteger(batchSize) || batchSize < 1 || batchSize > 500 || !Number.isSafeInteger(concurrency) || concurrency < 1 || concurrency > 32) throw new Error('Invalid Multicall limits')
     const batches: Call[][] = []
     for (let i = 0; i < calls.length; i += batchSize) {
       batches.push(calls.slice(i, i + batchSize))
@@ -83,6 +85,9 @@ export class MulticallProvider {
     try {
       return await this.callOnce(calls, options)
     } catch (error) {
+      const message = String((error as Error)?.message ?? '').toLowerCase()
+      const code = (error as { code?: string })?.code
+      if (/timeout|429|rate limit|too many requests|network|connection|rpc_budget|quote_timeout|service_busy/.test(message) || (code !== 'CALL_EXCEPTION' && !/execution reverted|out of gas|gas required exceeds/.test(message))) throw error
       if (calls.length === 1) {
         return [{ success: false, returnData: '0x' }]
       }
@@ -101,7 +106,7 @@ export class MulticallProvider {
     ])
 
     const request: { to: string; data: string; gasLimit?: BigNumber } = {
-      to: MULTICALL3_ADDRESS,
+      to: this.address,
       data: calldata
     }
     if (options.gasLimitPerCall) {

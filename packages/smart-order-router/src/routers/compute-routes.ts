@@ -33,6 +33,9 @@ export function computeAllRoutes(
   const maxHops = options.maxHops ?? 3
   const maxRoutes = options.maxRoutesPerProtocol ?? 60
   const includeMixed = options.includeMixedRoutes ?? true
+  if (!Number.isSafeInteger(maxHops) || maxHops < 1 || maxHops > 3 || !Number.isSafeInteger(maxRoutes) || maxRoutes < 1 || maxRoutes > 60) throw new Error('Invalid route search limits')
+  if (pools.length > 2000) throw new Error('Too many candidate pools')
+  let examined = 0
 
   const tokenInWrapped = tokenIn.wrapped
   const tokenOutWrapped = tokenOut.wrapped
@@ -49,6 +52,7 @@ export function computeAllRoutes(
     if (currentPath.length === maxHops) return
 
     for (const pool of pools) {
+      if (++examined > 100_000) throw new Error('Route search budget exceeded')
       if (visited.has(pool)) continue
       if (!pool.involvesToken(previousToken)) continue
 

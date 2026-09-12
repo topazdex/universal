@@ -1,7 +1,7 @@
 import { BigintIsh, CurrencyAmount, Price, Token } from '@uniswap/sdk-core'
 import JSBI from 'jsbi'
 import invariant from 'tiny-invariant'
-import { CL_FACTORY_ADDRESS, CL_POOL_IMPLEMENTATION_ADDRESS, DEFAULT_FEE_BY_TICK_SPACING, TickSpacing } from '../constants'
+import { DEFAULT_FEE_BY_TICK_SPACING, TickSpacing } from '../constants'
 import { NEGATIVE_ONE, Q192 } from '../internalConstants'
 import { computePoolAddress } from '../utils/computePoolAddress'
 import { v3Swap } from '../utils/v3swap'
@@ -43,8 +43,8 @@ export class Pool {
     implementationAddressOverride?: string
   ): string {
     return computePoolAddress({
-      factoryAddress: factoryAddressOverride ?? CL_FACTORY_ADDRESS,
-      implementationAddress: implementationAddressOverride ?? CL_POOL_IMPLEMENTATION_ADDRESS,
+      factoryAddress: factoryAddressOverride,
+      implementationAddress: implementationAddressOverride,
       tickSpacing,
       tokenA,
       tokenB,

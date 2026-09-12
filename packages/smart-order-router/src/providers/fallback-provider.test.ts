@@ -8,10 +8,7 @@ type Behaviour = (method: string) => Promise<unknown>
 class ScriptedProvider extends StaticJsonRpcProvider {
   public sent: string[] = []
 
-  public constructor(
-    url: string,
-    private readonly behaviour: Behaviour
-  ) {
+  public constructor(url: string, private readonly behaviour: Behaviour) {
     super({ url }, 56)
   }
 
@@ -29,17 +26,26 @@ function revert(): Error {
   return Object.assign(new Error('execution reverted'), { code: 'CALL_EXCEPTION' })
 }
 
-const ok =
-  (value: unknown): Behaviour =>
-  async () =>
-    value
-const fails =
-  (error: Error): Behaviour =>
-  async () => {
-    throw error
-  }
+const ok = (value: unknown): Behaviour => async () => value
+const fails = (error: Error): Behaviour => async () => {
+  throw error
+}
 
 describe('FallbackRpcProvider', () => {
+  it('never uses a failover endpoint on the wrong chain', async () => {
+    const wrong = new ScriptedProvider('http://wrong', async (method) =>
+      method === 'eth_chainId' ? '0x2105' : '0x999'
+    )
+    const correct = new ScriptedProvider('http://correct', async (method) =>
+      method === 'eth_chainId' ? '0x1237' : '0x64'
+    )
+    const provider = new FallbackRpcProvider([wrong, correct], { chainId: 4663, validateChainId: true })
+    expect(await provider.send('eth_call', [])).toBe('0x64')
+    expect(wrong.sent).toEqual(['eth_chainId'])
+    expect(await provider.getBlockNumber()).toBe(100)
+    expect(correct.sent.filter((method) => method === 'eth_chainId')).toHaveLength(1)
+  })
+
   describe('failover', () => {
     it('moves to the next endpoint when one fails at the transport level', async () => {
       // #given
@@ -160,7 +166,7 @@ describe('FallbackRpcProvider', () => {
       await provider.getBlockNumber()
 
       // #then
-      expect(endpoint.sent.filter(method => method === 'eth_blockNumber')).toHaveLength(1)
+      expect(endpoint.sent.filter((method) => method === 'eth_blockNumber')).toHaveLength(1)
     })
 
     it('throws when no endpoint can report a height', async () => {
@@ -183,7 +189,7 @@ describe('FallbackRpcProvider', () => {
     })
 
     it('ships a public endpoint list that is https only and free of duplicates', () => {
-      expect(PUBLIC_BSC_RPC_URLS.every(url => url.startsWith('https://'))).toBe(true)
+      expect(PUBLIC_BSC_RPC_URLS.every((url) => url.startsWith('https://'))).toBe(true)
       expect(new Set(PUBLIC_BSC_RPC_URLS).size).toEqual(PUBLIC_BSC_RPC_URLS.length)
     })
   })

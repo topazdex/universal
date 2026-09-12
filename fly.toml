@@ -3,13 +3,12 @@
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 # Deploy notes and the reasoning behind these values: docs/ROUTING_API_DEPLOYMENT.md
 #
-#   fly secrets set BSC_MAINNET_RPC="https://…"                     # one endpoint
-#   fly secrets set BSC_RPC_URLS="https://paid…,https://public…"     # or several, with failover
-#   fly deploy                                                      # run from the repo root
+#   fly deploy                        # run from the repo root
 #
-# With neither secret set the service falls back to public endpoints and still works, several
-# times slower.
+# Enabled chains are in config/chains.production.json. This configuration uses public RPCs;
+# see docs/MULTICHAIN.md for per-chain configuration and private RPC endpoints.
 
+# Hardening configuration prepared for a future rollout; this commit is not a deployment.
 app = 'topaz-routing-api'
 # a quote is ~100 round trips to the RPC and one to the client, so this wants to sit near the RPC
 # provider rather than near users
@@ -19,7 +18,7 @@ primary_region = 'ord'
   dockerfile = 'packages/routing-api/Dockerfile'
 
 [env]
-  CHAIN_ID = '56'
+  CHAINS_CONFIG_FILE = '/app/config/chains.production.json'
   NODE_ENV = 'production'
   PORT = '3000'
 
@@ -28,13 +27,13 @@ primary_region = 'ord'
   force_https = true
   auto_stop_machines = 'off'
   auto_start_machines = true
-  min_machines_running = 1
+  min_machines_running = 2
   processes = ['app']
 
   [http_service.concurrency]
     type = 'requests'
-    hard_limit = 30
-    soft_limit = 15
+    hard_limit = 12
+    soft_limit = 6
 
   [[http_service.checks]]
     interval = '30s'

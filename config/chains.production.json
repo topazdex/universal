@@ -1,0 +1,20 @@
+{
+  "chainId": 56,
+  "chains": [
+    {
+      "chainId": 56
+    },
+    {
+      "chainId": 4663,
+      "subgraphCacheTtlMs": 30000
+    },
+    {
+      "chainId": 8453,
+      "subgraphCacheTtlMs": 30000
+    },
+    {
+      "chainId": 1,
+      "subgraphCacheTtlMs": 30000
+    }
+  ]
+}

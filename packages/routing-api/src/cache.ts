@@ -77,7 +77,7 @@ export class ResponseCache<T> {
         },
         error => {
           // a failure must not be cached, or one RPC blip is served for the whole TTL
-          this.entries.delete(key)
+          if (this.entries.get(key) === entry) this.entries.delete(key)
           throw error
         }
       )

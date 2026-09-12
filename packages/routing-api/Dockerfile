@@ -37,6 +37,7 @@ RUN corepack enable
 
 COPY --from=build /app/package.json /app/yarn.lock /app/.yarnrc.yml ./
 COPY --from=build /app/packages ./packages
+COPY config/chains.production.json ./config/chains.production.json
 RUN yarn workspaces focus --production --all && yarn cache clean
 
 # never run as root

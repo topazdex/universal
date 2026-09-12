@@ -1,9 +1,8 @@
 import { getCreate2Address } from '@ethersproject/address'
 import { keccak256 } from '@ethersproject/keccak256'
 import { pack } from '@ethersproject/solidity'
-import { Token } from '@uniswap/sdk-core'
+import { getChainConfig, Token } from '@topazdex/sdk-core'
 
-import { POOL_FACTORY_ADDRESS, POOL_IMPLEMENTATION_ADDRESS } from '../constants'
 
 /**
  * ERC-1167 minimal proxy creation code, the form OpenZeppelin's `Clones` deploys.
@@ -16,6 +15,7 @@ export function cloneInitCodeHash(implementation: string): string {
 }
 
 export function sortsBefore(tokenA: Token, tokenB: Token): boolean {
+  if (tokenA.chainId !== tokenB.chainId) throw new Error('CHAIN_IDS')
   return tokenA.address.toLowerCase() < tokenB.address.toLowerCase()
 }
 
@@ -26,8 +26,8 @@ export function sortsBefore(tokenA: Token, tokenB: Token): boolean {
  * `salt = keccak256(abi.encodePacked(token0, token1, stable))`.
  */
 export function computePoolAddress({
-  factoryAddress = POOL_FACTORY_ADDRESS,
-  implementationAddress = POOL_IMPLEMENTATION_ADDRESS,
+  factoryAddress,
+  implementationAddress,
   tokenA,
   tokenB,
   stable
@@ -38,6 +38,8 @@ export function computePoolAddress({
   tokenB: Token
   stable: boolean
 }): string {
+  factoryAddress ??= getChainConfig(tokenA.chainId).v2FactoryAddress
+  implementationAddress ??= getChainConfig(tokenA.chainId).v2PoolImplementationAddress
   const [token0, token1] = sortsBefore(tokenA, tokenB) ? [tokenA, tokenB] : [tokenB, tokenA]
   const salt = keccak256(pack(['address', 'address', 'bool'], [token0.address, token1.address, stable]))
   return getCreate2Address(factoryAddress, salt, cloneInitCodeHash(implementationAddress))

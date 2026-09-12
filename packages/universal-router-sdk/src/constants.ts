@@ -1,3 +1,4 @@
+import { getChainConfig } from '@topazdex/sdk-core'
 import { BigNumber } from '@ethersproject/bignumber'
 
 export const TOPAZ_CHAIN_ID = 56
@@ -32,11 +33,14 @@ export const MAX_UINT160 = BigNumber.from(2).pow(160).sub(1)
  * `DeployedRouterForkTest` in the universal-router package.
  */
 export const UNIVERSAL_ROUTER_ADDRESSES: { [chainId: number]: string } = {
-  [TOPAZ_CHAIN_ID]: '0x691e6171e0a434FfE5C9f1759621D05b9efcF6A6'
+  [1]: '0x606794d37991A426a189fD9FA8664D339A77f8ae',
+  [TOPAZ_CHAIN_ID]: '0x691e6171e0a434FfE5C9f1759621D05b9efcF6A6',
+  [4663]: '0x268d1C8a538Ecf6628838C11d581e1EABD13D6A4',
+  [8453]: '0xe4b23F13b24232C1E68AD0575191216152AA9480'
 }
 
 export function universalRouterAddress(chainId: number, override?: string): string {
-  const address = override ?? UNIVERSAL_ROUTER_ADDRESSES[chainId]
+  const address = override ?? getChainConfig(chainId).universalRouterAddress
   if (!address) {
     throw new Error(`No Universal Router deployment recorded for chain ${chainId}, pass one explicitly`)
   }
