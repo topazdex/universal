@@ -9,17 +9,19 @@ export interface AnvilInstance {
 const ANVIL_MNEMONIC = 'test test test test test test test test test test test junk'
 
 /**
- * Boots an anvil fork of BNB Chain so SDK generated calldata can be executed against the real
+ * Boots an anvil fork so SDK generated calldata can be executed against the real
  * Topaz pools rather than mocks.
  */
 export async function startAnvilFork({
   rpcUrl,
   blockNumber,
-  port
+  port,
+  chainId = 56
 }: {
   rpcUrl: string
   blockNumber?: number
   port: number
+  chainId?: number
 }): Promise<AnvilInstance> {
   const args = [
     '--fork-url',
@@ -39,7 +41,7 @@ export async function startAnvilFork({
     stderr += String(chunk)
   })
 
-  const provider = new providers.JsonRpcProvider(`http://127.0.0.1:${port}`, 56)
+  const provider = new providers.JsonRpcProvider(`http://127.0.0.1:${port}`, chainId)
 
   const deadline = Date.now() + 60_000
   for (;;) {

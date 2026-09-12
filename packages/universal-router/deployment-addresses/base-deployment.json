@@ -1,0 +1,40 @@
+{
+  "chainId": 8453,
+  "UniversalRouter": "0xe4b23F13b24232C1E68AD0575191216152AA9480",
+  "transactionHash": "0x72bcf4bae1e30dba5d1d03e5d21fb25a85c3dba48d17ae822fe01b33e90c6e18",
+  "blockNumber": 51197232,
+  "blockHash": "0xfac1b4732a91b9cbe5a41911baf643ce5543b61dc090cd0f2d89b21458322fef",
+  "deployer": "0xd7E8557B8C78E131a9fa893aE12E8c2818234AEA",
+  "nonce": 10,
+  "gasUsed": "3531170",
+  "effectiveGasPriceWei": "5000052",
+  "executionFeeETH": "0.00001765603362084",
+  "l1FeeWei": "45271393609",
+  "constructorParameters": {
+    "permit2": "0x000000000022D473030F116dDEE9F6B43aC78BA3",
+    "weth9": "0x4200000000000000000000000000000000000006",
+    "v2Factory": "0x1E3aC31cF96b20619c913384C9bf6010A824fB95",
+    "v2Implementation": "0x8776BE6cd50BB78414c655bc8bF9e86A0989722F",
+    "clFactory": "0xaa5865dC3A60b25D305226d66fd573021f0D8fFB",
+    "clImplementation": "0x2DaA7cF731334b4Cd1c2E4E01E97Ca67F4B9C6AE"
+  },
+  "compiler": {
+    "version": "0.8.17+commit.8df45f5f"
+  },
+  "optimizer": {
+    "enabled": true,
+    "runs": 1000000
+  },
+  "evmVersion": "london",
+  "creationInputHash": "0x4a1795c521b498ad3cd6bf747963624c44ac3031cdbbeeb4a9297f934694c02a",
+  "runtimeCodeHash": "0x0e4ab11bb3a6690689e045812d55b8103a5ef8a6a3e58f91291756449aea7eab",
+  "runtimeCodeBytes": 16003,
+  "creationInputVerified": true,
+  "artifactFile": "base-router-artifact.json",
+  "artifactSha256": "c473215dd5c0a364eb3ec4f2c66c95c479207354b48fe5dfb6c39dbe3a6c7fe9",
+  "runtimeAndImmutablesVerified": true,
+  "explorerVerification": "verified on BaseScan on 2026-09-12",
+  "explorerVerificationUrl": "https://basescan.org/address/0xe4b23F13b24232C1E68AD0575191216152AA9480#code",
+  "explorerVerificationCheckedAt": "2026-09-12T06:57:30.716Z",
+  "verificationEvidenceFile": "../../../docs/evidence/universal-router-source-verification-2026-09-12.json"
+}

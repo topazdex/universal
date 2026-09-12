@@ -1,5 +1,7 @@
 # Deploying the routing API
 
+For chain selection, unified subgraphs and the Robinhood, Base and Ethereum deployments, see [multichain setup](MULTICHAIN.md). The Fly deployment enables all four chains; single-chain examples below retain chain 56 as the default.
+
 The service is stateless: it holds a pool-list cache in memory and nothing else. Scale it
 horizontally, restart it freely, and point it at a good RPC — that last part is what determines
 whether it is fast or useless.
@@ -25,9 +27,10 @@ Latency is dominated by RPC round trips, so co-locate the service with the RPC p
 | `UNIVERSAL_ROUTER_ADDRESS` | no | recorded deployment | overrides the address used for calldata |
 | `MULTICALL_BATCH_SIZE` | no | `15` | quote calls per `eth_call`; see the tuning section before changing it |
 | `MULTICALL_CONCURRENCY` | no | `16` | `eth_call`s in flight; lower it if the RPC rate limits you |
-| `ROUTING_BASE_TOKENS` | no | `BASE_TOKENS` | comma separated addresses the router may hop through |
+| `ROUTING_BASE_TOKENS` | no | `baseTokensOnChain(chainId)` | comma separated addresses the router may hop through |
 | `CORS_ORIGINS` | no | `localhost`, `https://topazdex.com`, `https://*.topazdex.com` | comma separated browser origins. The literal `localhost` means any loopback port; a `*` in a host (`https://*.example.com`) matches its subdomains but not the apex; `*` alone allows any origin |
 | `QUOTE_CACHE_TTL_MS` | no | `1000` | how long an identical quote is reused; `0` disables it |
+| `SUBGRAPH_CACHE_TTL_MS` | no | `300000` | pool discovery cache; the production JSON sets 30 seconds for spoke chains |
 
 No secrets beyond the RPC URL. If your RPC key is in the URL, treat the whole variable as a secret.
 
@@ -70,12 +73,15 @@ excluded.
 
 ### Fly.io
 
-`fly.toml` at the repo root is ready to go. Deploy from the repo root — the Dockerfile needs the
-whole workspace as build context.
+`fly.toml` loads `/app/config/chains.production.json`, which the Dockerfile includes in the runtime
+image. It enables BNB (56, default), Robinhood (4663), Base (8453) and Ethereum (1) using their recorded contracts,
+subgraphs and public RPCs. Deploy from the repo root — the Dockerfile needs the whole workspace as
+build context. With `CHAINS_CONFIG_FILE` set, per-chain settings come from that JSON file; the
+single-chain environment variables above do not apply. Keep private RPC URLs out of the committed
+file and image: mount a private configuration file and set `CHAINS_CONFIG_FILE` to its path.
 
 ```bash
 fly launch --no-deploy --copy-config          # first time only, creates the app
-fly secrets set BSC_MAINNET_RPC="https://…"   # the only secret
 fly deploy
 fly logs
 ```
@@ -84,6 +90,7 @@ Then:
 
 ```bash
 curl -s https://topaz-routing-api.fly.dev/health
+# {"status":"ok","chainId":56,"chainIds":[56,4663,8453,1]}
 ```
 
 Choices baked into `fly.toml`, and when to change them:
@@ -249,7 +256,7 @@ provider rate limits you.
 
 ## 9. Hops, intermediaries, and what they cost
 
-`maxHops` defaults to **3**, over the intermediary tokens in `BASE_TOKENS`. Routes enumerated for
+`maxHops` defaults to **3**, using the selected chain's presets and discovered intermediaries. Routes enumerated for
 BNB → TOPAZ, which sets how much quoting there is to do:
 
 | intermediaries | 2 hops | 3 hops | 4 hops |
@@ -265,18 +272,23 @@ about 5 routes at 3 hops, and stops mattering once the token has no more pools t
 
 ### Where the intermediary list lives
 
-Three places, in order of how permanent the change is:
+Per-chain defaults and overrides:
 
-1. `BASE_TOKENS` in [`packages/sdk-core/src/index.ts`](../packages/sdk-core/src/index.ts) — the default.
-2. `ROUTING_BASE_TOKENS` — a comma separated list of addresses, overrides the default per deployment.
-3. `baseTokens` on `RoutingConfig` — per call, for programmatic use.
+1. `baseTokens` in [`packages/sdk-core/src/chains.ts`](../packages/sdk-core/src/chains.ts), plus wrapped native via `baseTokensOnChain(chainId)`. `BASE_TOKENS` remains the BNB compatibility export.
+2. `chains[].baseTokens` in `CHAINS_CONFIG_FILE`, or `ROUTING_BASE_TOKENS` for a single-chain server. A nonempty override replaces the preset; include wrapped native explicitly if desired.
+3. `baseTokens` on `RoutingConfig` — per call, for programmatic SDK use.
+
+See [the researched starter lists](INTERMEDIARY_TOKENS.md) for Robinhood, Base and Ethereum
+addresses, decimals, selection notes and current liquidity limitations.
 
 A token earns a place by *connecting* pairs, not by being popular: it needs live pools with more
 than one counterparty, otherwise it can only ever be an endpoint.
 
 **Tokens outside the list are still routable.** For each traded token the router pulls in the
-counterparties of its deepest pools — `discoveredIntermediariesPerToken`, default 5 — so a new
-pairing becomes routable the moment it has liquidity, without anyone editing a list.
+counterparties of its first matching pools in subgraph order — `discoveredIntermediariesPerToken`,
+default 5 per protocol. New pairs need indexed liquidity and a refreshed discovery cache;
+an additional preset is not required for direct endpoint pairs. Unified graphs order candidates
+by raw reserves/liquidity, not comparable USD depth.
 
 Worked example. QQQB is a recent RWA token, paired with USDT, and TQB is paired with QQQB. Neither
 is a hub. Quoting 1 BNB → TQB:

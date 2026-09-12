@@ -1,0 +1,105 @@
+{
+  "checkedAt": "2026-09-12T06:57:30.716Z",
+  "scope": "Universal Router deployments in this repository",
+  "contractIdentifier": "contracts/UniversalRouter.sol:UniversalRouter",
+  "compilerVersion": "0.8.17+commit.8df45f5f",
+  "compilerInputSourceCount": 60,
+  "creationBytecodeBytes": 16479,
+  "creationBytecodeHash": "0xe29c107352243b314dcac6a5d9352474babd8ec6109e3ad8926898acb702fd15",
+  "manifestFile": "../../packages/universal-router/deployment-addresses/router-verification-manifest.json",
+  "manifestSha256": "883808a14d6c9be32ffa6941f5d4063fb705dcb40b99493df2967b29bc1fb117",
+  "chains": [
+    {
+      "chain": "bsc",
+      "chainId": 56,
+      "address": "0x691e6171e0a434FfE5C9f1759621D05b9efcF6A6",
+      "explorer": "BscScan",
+      "url": "https://bscscan.com/address/0x691e6171e0a434FfE5C9f1759621D05b9efcF6A6#code",
+      "status": "already-verified",
+      "publishedSourceCheck": {
+        "chain": "bsc",
+        "chainId": 56,
+        "contractName": "UniversalRouter",
+        "compiler": "v0.8.17+commit.8df45f5f",
+        "sourceCount": 60,
+        "publishedSourcesMatch": true
+      }
+    },
+    {
+      "chain": "base",
+      "chainId": 8453,
+      "explorer": "BaseScan",
+      "url": "https://basescan.org/address/0xe4b23F13b24232C1E68AD0575191216152AA9480#code",
+      "address": "0xe4b23F13b24232C1E68AD0575191216152AA9480",
+      "status": "verified",
+      "guid": "i2ckxq3eqaxcmk9z3rbfnylqqpnyjtcwn6ygl1qei6uuj1luav",
+      "explorerResult": {
+        "status": "1",
+        "message": "OK",
+        "result": "Pass - Verified"
+      },
+      "publishedSourceCheck": {
+        "chain": "base",
+        "chainId": 8453,
+        "contractName": "UniversalRouter",
+        "compiler": "v0.8.17+commit.8df45f5f",
+        "sourceCount": 60,
+        "publishedSourcesMatch": true,
+        "constructorArgumentsMatch": true
+      },
+      "creationInputMatched": true,
+      "runtimeHashMatched": true
+    },
+    {
+      "chain": "ethereum",
+      "chainId": 1,
+      "explorer": "Etherscan",
+      "url": "https://etherscan.io/address/0x606794d37991A426a189fD9FA8664D339A77f8ae#code",
+      "address": "0x606794d37991A426a189fD9FA8664D339A77f8ae",
+      "status": "verified",
+      "guid": "32emw53puxeu3ppj7ltgaepv1scefzbhln5mz3vmsvs1qxvr9p",
+      "explorerResult": {
+        "status": "1",
+        "message": "OK",
+        "result": "Pass - Verified"
+      },
+      "publishedSourceCheck": {
+        "chain": "ethereum",
+        "chainId": 1,
+        "contractName": "UniversalRouter",
+        "compiler": "v0.8.17+commit.8df45f5f",
+        "sourceCount": 60,
+        "publishedSourcesMatch": true,
+        "constructorArgumentsMatch": true
+      },
+      "creationInputMatched": true,
+      "runtimeHashMatched": true
+    },
+    {
+      "chain": "robinhood",
+      "chainId": 4663,
+      "address": "0x268d1C8a538Ecf6628838C11d581e1EABD13D6A4",
+      "sourceVerification": {
+        "provider": "Sourcify",
+        "status": "verified",
+        "url": "https://repo.sourcify.dev/4663/0x268d1C8a538Ecf6628838C11d581e1EABD13D6A4",
+        "creationMatch": "match",
+        "runtimeMatch": "match",
+        "verifiedAt": "2026-09-12T06:50:38Z"
+      },
+      "creationInputMatched": true,
+      "runtimeHashMatched": true,
+      "blockscout": {
+        "status": "not-published",
+        "apiKeyAcceptedForReadRequests": true,
+        "sharedApiSubmissionHttpStatus": 500,
+        "sharedApiUrlEncodedSubmissionHttpStatus": 413,
+        "smallerInputSubmissionHttpStatus": 500,
+        "sourcifyImportHttpStatus": 500,
+        "directInstanceHttpStatus": 403,
+        "latestGetSourceCodeHasSource": false
+      }
+    }
+  ],
+  "transactionsBroadcast": false
+}

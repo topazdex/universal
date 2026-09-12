@@ -1,0 +1,654 @@
+{
+  "checkedAt": "2026-09-12T06:09:33.453Z",
+  "apiUrl": "https://quote.topazdex.com",
+  "health": {
+    "status": "ok",
+    "chainId": 56,
+    "chainIds": [
+      56,
+      4663,
+      8453,
+      1
+    ]
+  },
+  "swapTransactionsBroadcast": false,
+  "chains": [
+    {
+      "chainId": 56,
+      "name": "BNB Chain",
+      "pair": "BNB/USDT",
+      "results": [
+        {
+          "name": "native exact input",
+          "request": {
+            "type": "exactIn",
+            "tokenIn": "BNB",
+            "tokenOut": "0x55d398326f99059fF775485246999027B3197955",
+            "amount": "100000000000000"
+          },
+          "status": 200,
+          "chainId": 56,
+          "blockNumber": 121403390,
+          "quote": "0.073428019276101478",
+          "quoteElapsedMs": 3146,
+          "cache": "MISS",
+          "router": "0x691e6171e0a434FfE5C9f1759621D05b9efcF6A6",
+          "calldataBytes": 1828,
+          "routes": [
+            {
+              "protocol": "MIXED",
+              "percent": 65,
+              "amountIn": "65000000000000",
+              "amountOut": "47770363275374986",
+              "hops": [
+                {
+                  "protocol": "cl",
+                  "address": "0xFd8D957404aEDC1a382d968E016CB8C313f2725C",
+                  "tokenIn": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+                  "tokenOut": "0x570A5D26f7765Ecb712C0924E4De545B89fD43dF",
+                  "fee": 348,
+                  "tickSpacing": 50
+                },
+                {
+                  "protocol": "v2-volatile",
+                  "address": "0xDd3d3b162588Deec83829aC22af316FA3ffF7758",
+                  "tokenIn": "0x570A5D26f7765Ecb712C0924E4De545B89fD43dF",
+                  "tokenOut": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+                  "fee": 30
+                },
+                {
+                  "protocol": "cl",
+                  "address": "0x767F1F4bF9E5E40F3D865c172c9bD0AE216e65B4",
+                  "tokenIn": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+                  "tokenOut": "0x55d398326f99059fF775485246999027B3197955",
+                  "fee": 35,
+                  "tickSpacing": 50
+                }
+              ]
+            },
+            {
+              "protocol": "CL",
+              "percent": 35,
+              "amountIn": "35000000000000",
+              "amountOut": "25657656000726492",
+              "hops": [
+                {
+                  "protocol": "cl",
+                  "address": "0xfdA4eF2829C5ad5E8434AfDBe478841d289b14A5",
+                  "tokenIn": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+                  "tokenOut": "0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c",
+                  "fee": 62,
+                  "tickSpacing": 50
+                },
+                {
+                  "protocol": "cl",
+                  "address": "0x4915F50365FcbE72198aaD40F9a835E21809C327",
+                  "tokenIn": "0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c",
+                  "tokenOut": "0x55d398326f99059fF775485246999027B3197955",
+                  "fee": 30,
+                  "tickSpacing": 50
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "native exact output",
+          "request": {
+            "type": "exactOut",
+            "tokenIn": "BNB",
+            "tokenOut": "0x55d398326f99059fF775485246999027B3197955",
+            "amount": "100000000000000000"
+          },
+          "status": 200,
+          "chainId": 56,
+          "blockNumber": 121403390,
+          "quote": "0.000136400740950981",
+          "quoteElapsedMs": 4158,
+          "cache": "MISS",
+          "router": "0x691e6171e0a434FfE5C9f1759621D05b9efcF6A6",
+          "calldataBytes": 772,
+          "routes": [
+            {
+              "protocol": "CL",
+              "percent": 100,
+              "amountIn": "136400740950981",
+              "amountOut": "100000000000000000",
+              "hops": [
+                {
+                  "protocol": "cl",
+                  "address": "0x767F1F4bF9E5E40F3D865c172c9bD0AE216e65B4",
+                  "tokenIn": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+                  "tokenOut": "0x55d398326f99059fF775485246999027B3197955",
+                  "fee": 35,
+                  "tickSpacing": 50
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "chainId": 4663,
+      "name": "Robinhood",
+      "pair": "ETH/USDG",
+      "results": [
+        {
+          "name": "native exact input",
+          "request": {
+            "type": "exactIn",
+            "tokenIn": "ETH",
+            "tokenOut": "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168",
+            "amount": "100000000000000"
+          },
+          "status": 200,
+          "chainId": 4663,
+          "blockNumber": 60881815,
+          "quote": "0.251038",
+          "quoteElapsedMs": 962,
+          "cache": "MISS",
+          "router": "0x268d1C8a538Ecf6628838C11d581e1EABD13D6A4",
+          "calldataBytes": 644,
+          "routes": [
+            {
+              "protocol": "CL",
+              "percent": 100,
+              "amountIn": "100000000000000",
+              "amountOut": "251038",
+              "hops": [
+                {
+                  "protocol": "cl",
+                  "address": "0x8132252bd65E7C03F7B57739E1DB1c58d6Ee792F",
+                  "tokenIn": "0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73",
+                  "tokenOut": "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168",
+                  "fee": 500,
+                  "tickSpacing": 50
+                }
+              ]
+            }
+          ],
+          "simulationPassed": true
+        },
+        {
+          "name": "native exact output",
+          "request": {
+            "type": "exactOut",
+            "tokenIn": "ETH",
+            "tokenOut": "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168",
+            "amount": "100000"
+          },
+          "status": 200,
+          "chainId": 4663,
+          "blockNumber": 60881843,
+          "quote": "0.000039834416394619",
+          "quoteElapsedMs": 645,
+          "cache": "MISS",
+          "router": "0x268d1C8a538Ecf6628838C11d581e1EABD13D6A4",
+          "calldataBytes": 772,
+          "routes": [
+            {
+              "protocol": "CL",
+              "percent": 100,
+              "amountIn": "39834416394619",
+              "amountOut": "100000",
+              "hops": [
+                {
+                  "protocol": "cl",
+                  "address": "0x8132252bd65E7C03F7B57739E1DB1c58d6Ee792F",
+                  "tokenIn": "0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73",
+                  "tokenOut": "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168",
+                  "fee": 500,
+                  "tickSpacing": 50
+                }
+              ]
+            }
+          ],
+          "simulationPassed": true
+        }
+      ]
+    },
+    {
+      "chainId": 8453,
+      "name": "Base",
+      "pair": "ETH/USDC",
+      "results": [
+        {
+          "name": "native exact input",
+          "request": {
+            "type": "exactIn",
+            "tokenIn": "ETH",
+            "tokenOut": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+            "amount": "100000000000000"
+          },
+          "status": 200,
+          "chainId": 8453,
+          "blockNumber": 51202010,
+          "quote": "0.250923",
+          "quoteElapsedMs": 979,
+          "cache": "MISS",
+          "router": "0xe4b23F13b24232C1E68AD0575191216152AA9480",
+          "calldataBytes": 644,
+          "routes": [
+            {
+              "protocol": "CL",
+              "percent": 100,
+              "amountIn": "100000000000000",
+              "amountOut": "250923",
+              "hops": [
+                {
+                  "protocol": "cl",
+                  "address": "0x9DD30d200B5C7e6874aB5a23c7BD7e2AD6d9C135",
+                  "tokenIn": "0x4200000000000000000000000000000000000006",
+                  "tokenOut": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+                  "fee": 500,
+                  "tickSpacing": 50
+                }
+              ]
+            }
+          ],
+          "simulationPassed": true
+        },
+        {
+          "name": "native exact output",
+          "request": {
+            "type": "exactOut",
+            "tokenIn": "ETH",
+            "tokenOut": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+            "amount": "100000"
+          },
+          "status": 200,
+          "chainId": 8453,
+          "blockNumber": 51202010,
+          "quote": "0.000039852528334742",
+          "quoteElapsedMs": 4840,
+          "cache": "MISS",
+          "router": "0xe4b23F13b24232C1E68AD0575191216152AA9480",
+          "calldataBytes": 772,
+          "routes": [
+            {
+              "protocol": "CL",
+              "percent": 100,
+              "amountIn": "39852528334742",
+              "amountOut": "100000",
+              "hops": [
+                {
+                  "protocol": "cl",
+                  "address": "0x9DD30d200B5C7e6874aB5a23c7BD7e2AD6d9C135",
+                  "tokenIn": "0x4200000000000000000000000000000000000006",
+                  "tokenOut": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+                  "fee": 500,
+                  "tickSpacing": 50
+                }
+              ]
+            }
+          ],
+          "simulationPassed": true
+        },
+        {
+          "name": "stable to native",
+          "request": {
+            "type": "exactIn",
+            "tokenIn": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+            "tokenOut": "ETH",
+            "amount": "100000"
+          },
+          "status": 200,
+          "chainId": 8453,
+          "blockNumber": 51202012,
+          "quote": "0.000039812270292147",
+          "quoteElapsedMs": 534,
+          "cache": "MISS",
+          "router": "0xe4b23F13b24232C1E68AD0575191216152AA9480",
+          "calldataBytes": 644,
+          "routes": [
+            {
+              "protocol": "CL",
+              "percent": 100,
+              "amountIn": "100000",
+              "amountOut": "39812270292147",
+              "hops": [
+                {
+                  "protocol": "cl",
+                  "address": "0x9DD30d200B5C7e6874aB5a23c7BD7e2AD6d9C135",
+                  "tokenIn": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+                  "tokenOut": "0x4200000000000000000000000000000000000006",
+                  "fee": 500,
+                  "tickSpacing": 50
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "chainId": 1,
+      "name": "Ethereum",
+      "pair": "ETH/USDC",
+      "results": [
+        {
+          "name": "native exact input",
+          "request": {
+            "type": "exactIn",
+            "tokenIn": "ETH",
+            "tokenOut": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+            "amount": "100000000000000"
+          },
+          "status": 200,
+          "chainId": 1,
+          "blockNumber": 25959441,
+          "quote": "0.251584",
+          "quoteElapsedMs": 906,
+          "cache": "MISS",
+          "router": "0x606794d37991A426a189fD9FA8664D339A77f8ae",
+          "calldataBytes": 644,
+          "routes": [
+            {
+              "protocol": "CL",
+              "percent": 100,
+              "amountIn": "100000000000000",
+              "amountOut": "251584",
+              "hops": [
+                {
+                  "protocol": "cl",
+                  "address": "0x1265E0Ca0f4c107e2E4523E7de12180a7b14a8B1",
+                  "tokenIn": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+                  "tokenOut": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+                  "fee": 500,
+                  "tickSpacing": 50
+                }
+              ]
+            }
+          ],
+          "simulationPassed": true
+        },
+        {
+          "name": "native exact output",
+          "request": {
+            "type": "exactOut",
+            "tokenIn": "ETH",
+            "tokenOut": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+            "amount": "100000"
+          },
+          "status": 200,
+          "chainId": 1,
+          "blockNumber": 25959441,
+          "quote": "0.000039747679693097",
+          "quoteElapsedMs": 442,
+          "cache": "MISS",
+          "router": "0x606794d37991A426a189fD9FA8664D339A77f8ae",
+          "calldataBytes": 772,
+          "routes": [
+            {
+              "protocol": "CL",
+              "percent": 100,
+              "amountIn": "39747679693097",
+              "amountOut": "100000",
+              "hops": [
+                {
+                  "protocol": "cl",
+                  "address": "0x1265E0Ca0f4c107e2E4523E7de12180a7b14a8B1",
+                  "tokenIn": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+                  "tokenOut": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+                  "fee": 500,
+                  "tickSpacing": 50
+                }
+              ]
+            }
+          ],
+          "simulationPassed": true
+        },
+        {
+          "name": "stable to native",
+          "request": {
+            "type": "exactIn",
+            "tokenIn": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+            "tokenOut": "ETH",
+            "amount": "100000"
+          },
+          "status": 200,
+          "chainId": 1,
+          "blockNumber": 25959441,
+          "quote": "0.000039707429642323",
+          "quoteElapsedMs": 3536,
+          "cache": "MISS",
+          "router": "0x606794d37991A426a189fD9FA8664D339A77f8ae",
+          "calldataBytes": 644,
+          "routes": [
+            {
+              "protocol": "CL",
+              "percent": 100,
+              "amountIn": "100000",
+              "amountOut": "39707429642323",
+              "hops": [
+                {
+                  "protocol": "cl",
+                  "address": "0x1265E0Ca0f4c107e2E4523E7de12180a7b14a8B1",
+                  "tokenIn": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+                  "tokenOut": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+                  "fee": 500,
+                  "tickSpacing": 50
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "unifiedSubgraphSnapshots": [
+    {
+      "checkedAt": "2026-09-12T06:08:04.216Z",
+      "chainId": 4663,
+      "url": "https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-chain-robinhood/r-8b4f23a5d335-4f8e4a2e72c2beff/gn",
+      "chainState": {
+        "chainId": 4663,
+        "poolCount": "3"
+      },
+      "pools": [
+        {
+          "id": "0x5eaed561d88812a2d0ac4d1df65f9c793f7af316",
+          "poolType": "CL",
+          "factory": {
+            "id": "0xaa5865dc3a60b25d305226d66fd573021f0d8ffb"
+          },
+          "token0": {
+            "id": "0x020bfc650a365f8bb26819deaabf3e21291018b4",
+            "symbol": "CASHCAT",
+            "decimals": 18
+          },
+          "token1": {
+            "id": "0x0bd7d308f8e1639fab988df18a8011f41eacad73",
+            "symbol": "WETH",
+            "decimals": 18
+          },
+          "reserve0Raw": "2767143766956769493578",
+          "reserve1Raw": "120226056570548279",
+          "liquidity": "119582334567740774290",
+          "sqrtPriceX96": "640999034603780820971807123",
+          "tick": -96346,
+          "tickSpacing": 200,
+          "feePips": 3000
+        },
+        {
+          "id": "0x8132252bd65e7c03f7b57739e1db1c58d6ee792f",
+          "poolType": "CL",
+          "factory": {
+            "id": "0xaa5865dc3a60b25d305226d66fd573021f0d8ffb"
+          },
+          "token0": {
+            "id": "0x0bd7d308f8e1639fab988df18a8011f41eacad73",
+            "symbol": "WETH",
+            "decimals": 18
+          },
+          "token1": {
+            "id": "0x5fc5360d0400a0fd4f2af552add042d716f1d168",
+            "symbol": "USDG",
+            "decimals": 6
+          },
+          "reserve0Raw": "166684856443889771",
+          "reserve1Raw": "812670758",
+          "liquidity": "1195815878196632",
+          "sqrtPriceX96": "3970629066438530515560721",
+          "tick": -198034,
+          "tickSpacing": 50,
+          "feePips": 500
+        },
+        {
+          "id": "0x9990de5a2eadfa50112077dae6630864d29ac309",
+          "poolType": "CL",
+          "factory": {
+            "id": "0xaa5865dc3a60b25d305226d66fd573021f0d8ffb"
+          },
+          "token0": {
+            "id": "0x0bd7d308f8e1639fab988df18a8011f41eacad73",
+            "symbol": "WETH",
+            "decimals": 18
+          },
+          "token1": {
+            "id": "0x39dbed3a2bd333467115de45665cc57f813c4571",
+            "symbol": "PONS",
+            "decimals": 18
+          },
+          "reserve0Raw": "322691382016246939",
+          "reserve1Raw": "662726250452740594364",
+          "liquidity": "660098976262432151407",
+          "sqrtPriceX96": "5089475076388987918188817577219",
+          "tick": 83256,
+          "tickSpacing": 50,
+          "feePips": 500
+        }
+      ],
+      "_meta": {
+        "block": {
+          "number": 60881007
+        },
+        "hasIndexingErrors": false
+      }
+    },
+    {
+      "checkedAt": "2026-09-12T06:08:04.268Z",
+      "chainId": 8453,
+      "url": "https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-chain-base/r-8b4f23a5d335-b4f259122be58576/gn",
+      "chainState": {
+        "chainId": 8453,
+        "poolCount": "1"
+      },
+      "pools": [
+        {
+          "id": "0x9dd30d200b5c7e6874ab5a23c7bd7e2ad6d9c135",
+          "poolType": "CL",
+          "factory": {
+            "id": "0xaa5865dc3a60b25d305226d66fd573021f0d8ffb"
+          },
+          "token0": {
+            "id": "0x4200000000000000000000000000000000000006",
+            "symbol": "WETH",
+            "decimals": 18
+          },
+          "token1": {
+            "id": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+            "symbol": "USDC",
+            "decimals": 6
+          },
+          "reserve0Raw": "52348079540917704",
+          "reserve1Raw": "249698867",
+          "liquidity": "382394316965280",
+          "sqrtPriceX96": "3969733737481112583443717",
+          "tick": -198038,
+          "tickSpacing": 50,
+          "feePips": 500
+        }
+      ],
+      "_meta": {
+        "block": {
+          "number": 51201968
+        },
+        "hasIndexingErrors": false
+      }
+    },
+    {
+      "checkedAt": "2026-09-12T06:08:04.226Z",
+      "chainId": 1,
+      "url": "https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-chain-ethereum/r-8b4f23a5d335-51fb901bfc78d0a8/gn",
+      "chainState": {
+        "chainId": 1,
+        "poolCount": "1"
+      },
+      "pools": [
+        {
+          "id": "0x1265e0ca0f4c107e2e4523e7de12180a7b14a8b1",
+          "poolType": "CL",
+          "factory": {
+            "id": "0xaa5865dc3a60b25d305226d66fd573021f0d8ffb"
+          },
+          "token0": {
+            "id": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+            "symbol": "USDC",
+            "decimals": 6
+          },
+          "token1": {
+            "id": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+            "symbol": "WETH",
+            "decimals": 18
+          },
+          "reserve0Raw": "278293788",
+          "reserve1Raw": "72743546466501655",
+          "liquidity": "308894899885693",
+          "sqrtPriceX96": "1577318617668652567711218897516844",
+          "tick": 197988,
+          "tickSpacing": 50,
+          "feePips": 500
+        }
+      ],
+      "_meta": {
+        "block": {
+          "number": 25959434
+        },
+        "hasIndexingErrors": false
+      }
+    }
+  ],
+  "robinhoodIntermediaryCheck": {
+    "checkedAt": "2026-09-12T06:09:54.473Z",
+    "name": "CASHCAT to WETH to PONS",
+    "request": {
+      "chainId": "4663",
+      "tokenIn": "0x020bfc650a365f8bb26819deaabf3e21291018b4",
+      "tokenOut": "0x39dbed3a2bd333467115de45665cc57f813c4571",
+      "amount": "100000000000000000",
+      "type": "exactIn",
+      "skipCache": "true"
+    },
+    "status": 200,
+    "quote": "0.027221393040343504",
+    "blockNumber": 60882107,
+    "routes": [
+      {
+        "protocol": "CL",
+        "percent": 100,
+        "amountIn": "100000000000000000",
+        "amountOut": "27221393040343504",
+        "hops": [
+          {
+            "protocol": "cl",
+            "address": "0x5eaed561d88812A2D0ac4D1dF65f9c793f7aF316",
+            "tokenIn": "0x020bfC650A365f8BB26819deAAbF3E21291018b4",
+            "tokenOut": "0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73",
+            "fee": 3000,
+            "tickSpacing": 200
+          },
+          {
+            "protocol": "cl",
+            "address": "0x9990de5A2eadFa50112077dAE6630864d29ac309",
+            "tokenIn": "0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73",
+            "tokenOut": "0x39dBED3a2bd333467115dE45665cC57F813C4571",
+            "fee": 500,
+            "tickSpacing": 50
+          }
+        ]
+      }
+    ]
+  }
+}

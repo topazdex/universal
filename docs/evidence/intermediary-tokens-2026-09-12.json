@@ -1,0 +1,316 @@
+{
+  "checkedAt": "2026-09-12T04:59:32.320Z",
+  "chains": [
+    {
+      "chainId": 4663,
+      "name": "Robinhood",
+      "rpcUrl": "https://rpc.mainnet.chain.robinhood.com",
+      "blockNumber": 60840233,
+      "blockHash": "0xa3ef1c53bcef0bf4b7dd95e8de2810db134560b7e1f5af012eb385c6fdc2217a",
+      "blockTimestamp": "2026-09-12T04:59:03.000Z",
+      "tokens": [
+        {
+          "symbol": "WETH",
+          "address": "0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73",
+          "decimals": 18,
+          "codeBytes": 2202
+        },
+        {
+          "symbol": "USDG",
+          "address": "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168",
+          "decimals": 6,
+          "codeBytes": 170
+        },
+        {
+          "symbol": "xTOPAZ",
+          "address": "0x1aA89C4Ab9884Cb65B759A3Cc3A1690744d687a6",
+          "decimals": 18,
+          "codeBytes": 15149
+        }
+      ],
+      "subgraphUrl": "https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-chain-robinhood/r-8b4f23a5d335-4f8e4a2e72c2beff/gn",
+      "subgraph": {
+        "chainState": {
+          "chainId": 4663,
+          "poolCount": "2"
+        },
+        "pools": [
+          {
+            "id": "0x8132252bd65e7c03f7b57739e1db1c58d6ee792f",
+            "poolType": "CL",
+            "factory": {
+              "id": "0xaa5865dc3a60b25d305226d66fd573021f0d8ffb"
+            },
+            "token0": {
+              "id": "0x0bd7d308f8e1639fab988df18a8011f41eacad73",
+              "symbol": "WETH",
+              "decimals": 18
+            },
+            "token1": {
+              "id": "0x5fc5360d0400a0fd4f2af552add042d716f1d168",
+              "symbol": "USDG",
+              "decimals": 6
+            },
+            "reserve0Raw": "156895438182860286",
+            "reserve1Raw": "787216586",
+            "liquidity": "1185053023478970"
+          },
+          {
+            "id": "0x9990de5a2eadfa50112077dae6630864d29ac309",
+            "poolType": "CL",
+            "factory": {
+              "id": "0xaa5865dc3a60b25d305226d66fd573021f0d8ffb"
+            },
+            "token0": {
+              "id": "0x0bd7d308f8e1639fab988df18a8011f41eacad73",
+              "symbol": "WETH",
+              "decimals": 18
+            },
+            "token1": {
+              "id": "0x39dbed3a2bd333467115de45665cc57f813c4571",
+              "symbol": "PONS",
+              "decimals": 18
+            },
+            "reserve0Raw": "217851261950899468",
+            "reserve1Raw": "974753994168545349385",
+            "liquidity": "621105877058003171674"
+          }
+        ],
+        "_meta": {
+          "block": {
+            "number": 60840257
+          },
+          "hasIndexingErrors": false
+        }
+      }
+    },
+    {
+      "chainId": 8453,
+      "name": "Base",
+      "rpcUrl": "https://mainnet.base.org",
+      "blockNumber": 51199898,
+      "blockHash": "0x163ba03bb2a172f90b4bfddafe3820b31bf5556eb035557816fe0929f41da581",
+      "blockTimestamp": "2026-09-12T04:59:03.000Z",
+      "tokens": [
+        {
+          "symbol": "WETH",
+          "address": "0x4200000000000000000000000000000000000006",
+          "decimals": 18,
+          "codeBytes": 2041
+        },
+        {
+          "symbol": "USDC",
+          "address": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+          "decimals": 6,
+          "codeBytes": 1852
+        },
+        {
+          "symbol": "cbBTC",
+          "address": "0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf",
+          "decimals": 8,
+          "codeBytes": 1550
+        },
+        {
+          "symbol": "wstETH",
+          "address": "0xc1CBa3fCea344f92D9239c08C0568f6F2F0ee452",
+          "decimals": 18,
+          "codeBytes": 3296
+        },
+        {
+          "symbol": "cbETH",
+          "address": "0x2Ae3F1Ec7F1F5012CFEab0185bfc7aa3cf0DEc22",
+          "decimals": 18,
+          "codeBytes": 2096
+        },
+        {
+          "symbol": "EURC",
+          "address": "0x60a3E35Cc302bFA44Cb288Bc5a4F316Fdb1adb42",
+          "decimals": 6,
+          "codeBytes": 1798
+        },
+        {
+          "symbol": "AERO",
+          "address": "0x940181a94A35A4569E4529A3CDfB74e38FD98631",
+          "decimals": 18,
+          "codeBytes": 4736
+        },
+        {
+          "symbol": "xTOPAZ",
+          "address": "0x1aA89C4Ab9884Cb65B759A3Cc3A1690744d687a6",
+          "decimals": 18,
+          "codeBytes": 15149
+        }
+      ],
+      "subgraphUrl": "https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-chain-base/r-8b4f23a5d335-b4f259122be58576/gn",
+      "subgraph": {
+        "chainState": {
+          "chainId": 8453,
+          "poolCount": "0"
+        },
+        "pools": [],
+        "_meta": {
+          "block": {
+            "number": 51199912
+          },
+          "hasIndexingErrors": false
+        }
+      },
+      "archivedCbEthAddress": {
+        "address": "0x2ae3f1ec7f1f5012cfeab0185bfc7aa3cf0dec70",
+        "codeBytes": 0
+      }
+    },
+    {
+      "chainId": 1,
+      "name": "Ethereum",
+      "rpcUrl": "https://ethereum-rpc.publicnode.com",
+      "blockNumber": 25959091,
+      "blockHash": "0x581187fc56559bb57b43b9bafb4fa47703017d8e5f051534953887779b5bc2a8",
+      "blockTimestamp": "2026-09-12T04:58:59.000Z",
+      "tokens": [
+        {
+          "symbol": "WETH",
+          "address": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+          "decimals": 18,
+          "codeBytes": 3124
+        },
+        {
+          "symbol": "USDC",
+          "address": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+          "decimals": 6,
+          "codeBytes": 2186
+        },
+        {
+          "symbol": "USDT",
+          "address": "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+          "decimals": 6,
+          "codeBytes": 11075
+        },
+        {
+          "symbol": "DAI",
+          "address": "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+          "decimals": 18,
+          "codeBytes": 7904
+        },
+        {
+          "symbol": "USDS",
+          "address": "0xdC035D45d973E3EC169d2276DDab16f1e407384F",
+          "decimals": 18,
+          "codeBytes": 170
+        },
+        {
+          "symbol": "WBTC",
+          "address": "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599",
+          "decimals": 8,
+          "codeBytes": 4582
+        },
+        {
+          "symbol": "cbBTC",
+          "address": "0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf",
+          "decimals": 8,
+          "codeBytes": 1550
+        },
+        {
+          "symbol": "wstETH",
+          "address": "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0",
+          "decimals": 18,
+          "codeBytes": 6492
+        },
+        {
+          "symbol": "xTOPAZ",
+          "address": "0x1aA89C4Ab9884Cb65B759A3Cc3A1690744d687a6",
+          "decimals": 18,
+          "codeBytes": 15149
+        }
+      ],
+      "subgraphUrl": "https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-chain-ethereum/r-8b4f23a5d335-51fb901bfc78d0a8/gn",
+      "subgraph": {
+        "chainState": {
+          "chainId": 1,
+          "poolCount": "0"
+        },
+        "pools": [],
+        "_meta": {
+          "block": {
+            "number": 25959091
+          },
+          "hasIndexingErrors": false
+        }
+      }
+    }
+  ],
+  "localApiQuoteCheck": {
+    "checkedAt": "2026-09-12T05:04:24.166Z",
+    "baseTokens": [
+      "WETH",
+      "USDG",
+      "xTOPAZ"
+    ],
+    "results": [
+      {
+        "name": "USDG to PONS",
+        "chainId": 4663,
+        "blockNumber": 60843373,
+        "quote": "0.16679365696909018",
+        "routes": [
+          {
+            "protocol": "CL",
+            "percent": 100,
+            "amountIn": "100000",
+            "amountOut": "166793656969090180",
+            "hops": [
+              {
+                "protocol": "cl",
+                "address": "0x8132252bd65E7C03F7B57739E1DB1c58d6Ee792F",
+                "tokenIn": "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168",
+                "tokenOut": "0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73",
+                "fee": 500,
+                "tickSpacing": 50
+              },
+              {
+                "protocol": "cl",
+                "address": "0x9990de5A2eadFa50112077dAE6630864d29ac309",
+                "tokenIn": "0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73",
+                "tokenOut": "0x39dBED3a2bd333467115dE45665cC57F813C4571",
+                "fee": 500,
+                "tickSpacing": 50
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "PONS to USDG",
+        "chainId": 4663,
+        "blockNumber": 60843378,
+        "quote": "0.059833",
+        "routes": [
+          {
+            "protocol": "CL",
+            "percent": 100,
+            "amountIn": "100000000000000000",
+            "amountOut": "59833",
+            "hops": [
+              {
+                "protocol": "cl",
+                "address": "0x9990de5A2eadFa50112077dAE6630864d29ac309",
+                "tokenIn": "0x39dBED3a2bd333467115dE45665cC57F813C4571",
+                "tokenOut": "0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73",
+                "fee": 500,
+                "tickSpacing": 50
+              },
+              {
+                "protocol": "cl",
+                "address": "0x8132252bd65E7C03F7B57739E1DB1c58d6Ee792F",
+                "tokenIn": "0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73",
+                "tokenOut": "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168",
+                "fee": 500,
+                "tickSpacing": 50
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

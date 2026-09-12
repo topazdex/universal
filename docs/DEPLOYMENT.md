@@ -1,8 +1,22 @@
 # Deploying the Universal Router
 
+For chain selection, unified subgraphs and the Robinhood deployment, see [multichain setup](MULTICHAIN.md). BNB examples below retain chain 56 as the default.
+
 | chain | address | source verified |
 | --- | --- | --- |
 | BNB Chain mainnet (56) | [`0x691e6171e0a434FfE5C9f1759621D05b9efcF6A6`](https://bscscan.com/address/0x691e6171e0a434FfE5C9f1759621D05b9efcF6A6) | BscScan ✓, plus `DeployedRouterForkTest` byte for byte |
+| Robinhood (4663) | [`0x268d1C8a538Ecf6628838C11d581e1EABD13D6A4`](https://repo.sourcify.dev/4663/0x268d1C8a538Ecf6628838C11d581e1EABD13D6A4) | Sourcify ✓ for creation and runtime; Blockscout publication pending |
+| Base (8453) | [`0xe4b23F13b24232C1E68AD0575191216152AA9480`](https://basescan.org/address/0xe4b23F13b24232C1E68AD0575191216152AA9480#code) | BaseScan ✓ |
+| Ethereum (1) | [`0x606794d37991A426a189fD9FA8664D339A77f8ae`](https://etherscan.io/address/0x606794d37991A426a189fD9FA8664D339A77f8ae#code) | Etherscan ✓ |
+
+Source verification was checked on September 12, 2026 UTC. Published sources on the three
+Etherscan-family explorers match the 60-file compiler input reproduced locally; Base and
+Ethereum constructor arguments also match the deployment records. Robinhood passed Sourcify
+creation and runtime verification. Its Blockscout instance still returns a browser challenge
+on direct API calls, while authenticated shared-API submissions and Sourcify imports return
+HTTP 500. The Blockscout key works for read requests, but its explorer has not published the
+verification. [Verification evidence](evidence/universal-router-source-verification-2026-09-12.json)
+records the individual results. This table covers the Universal Routers deployed by this repo.
 
 To re-verify a deployment, or to run the whole behavioural suite against the live contract rather
 than one deployed into the fork:
@@ -84,6 +98,29 @@ Why the standard tooling fails here is worth understanding, because it will recu
 nothing outside a temp directory.
 
 The same trap applies to any other verifier (Sourcify included) fed the reachable-subset input.
+
+### Reproduce the recorded spoke deployments
+
+The checked [verification manifest](../packages/universal-router/deployment-addresses/router-verification-manifest.json)
+preserves the compiler settings and hashes of the 60 sources that reproduce all three saved
+spoke artifacts. Prepare an input without rebuilding or changing the Foundry output directory:
+
+```bash
+node packages/universal-router/script/prepare-verification.cjs ethereum /tmp/ethereum-verification
+```
+
+Use `base` or `robinhood` for those records. The helper checks source hashes, compiler version,
+compiled creation bytecode and the constructor-bearing creation input hash. It writes
+`standard-input.json`, `constructor-arguments.txt` and `summary.json`; these contain only public
+verification data. It needs the workspace's installed dependencies and solc 0.8.17 in Foundry's
+SVM location. Set `SOLC=/path/to/solc-0.8.17` if the binary is elsewhere.
+
+Base and Ethereum accept the resulting Solidity standard JSON through
+[Etherscan V2 verification](https://docs.etherscan.io/api-reference/endpoint/verifysourcecode).
+Use the recorded constructor arguments and `contracts/UniversalRouter.sol:UniversalRouter`.
+Robinhood was verified through [Sourcify V2](https://docs.sourcify.dev/docs/api/), using the same
+standard input, compiler version and its recorded creation transaction hash. Keys are not needed
+to prepare the files or submit to Sourcify. Explorer keys remain in `.env`, outside these records.
 
 ## 4. Record the address
 

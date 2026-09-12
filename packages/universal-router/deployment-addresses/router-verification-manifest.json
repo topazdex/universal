@@ -1,0 +1,225 @@
+{
+  "compilerVersion": "0.8.17+commit.8df45f5f",
+  "contractIdentifier": "contracts/UniversalRouter.sol:UniversalRouter",
+  "creationBytecodeHash": "0xe29c107352243b314dcac6a5d9352474babd8ec6109e3ad8926898acb702fd15",
+  "language": "Solidity",
+  "settings": {
+    "remappings": [
+      "forge-std/=lib/forge-std/src/",
+      "solmate/=lib/solmate/",
+      "permit2/=lib/permit2/",
+      "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/",
+      "ds-test/=lib/solmate/lib/ds-test/src/",
+      "erc4626-tests/=lib/openzeppelin-contracts/lib/erc4626-tests/",
+      "forge-gas-snapshot/=lib/permit2/lib/forge-gas-snapshot/src/",
+      "openzeppelin-contracts/=lib/openzeppelin-contracts/",
+      "openzeppelin/=lib/openzeppelin-contracts/contracts/"
+    ],
+    "optimizer": {
+      "enabled": true,
+      "runs": 1000000,
+      "details": {
+        "constantOptimizer": true,
+        "yul": true
+      }
+    },
+    "metadata": {
+      "useLiteralContent": false,
+      "bytecodeHash": "none"
+    },
+    "outputSelection": {
+      "contracts/UniversalRouter.sol": {
+        "UniversalRouter": [
+          "abi",
+          "metadata",
+          "evm.bytecode",
+          "evm.deployedBytecode"
+        ]
+      }
+    },
+    "evmVersion": "london",
+    "viaIR": true
+  },
+  "sources": {
+    "contracts/UniversalRouter.sol": {
+      "keccak256": "0x03424422398f47d40700fe2495696d121930c9bc346cec66867723c77e24cb87"
+    },
+    "contracts/base/Dispatcher.sol": {
+      "keccak256": "0x4231998b2910991f6064480d90858084144e33ae7588f371f14eb857c38cc224"
+    },
+    "contracts/base/LockAndMsgSender.sol": {
+      "keccak256": "0x6f816683f08585270627953efeb3a30e59c1353b9012430975e992e7132a9446"
+    },
+    "contracts/base/RouterImmutables.sol": {
+      "keccak256": "0x73e67f2defd9707f17be84146c2ab276b845288279a97ad848f7b6bbf26ae4b3"
+    },
+    "contracts/interfaces/IUniversalRouter.sol": {
+      "keccak256": "0x4252c8bda3e2d57b1e7f8c4538f4595a954d8e36fe2dea160fdf6f9853c0798c"
+    },
+    "contracts/interfaces/external/ICLFactory.sol": {
+      "keccak256": "0x23758a6f0145cac8ea03d4a21a416aa4166be8d4ff8337876698f82faa27d869"
+    },
+    "contracts/interfaces/external/ICLPool.sol": {
+      "keccak256": "0x319bf262d1496d7869bee47abf197c0e56f1cc6f42d34795300f3d1bb7f6a2b2"
+    },
+    "contracts/interfaces/external/ICLSwapCallback.sol": {
+      "keccak256": "0xc51d35155e31106ecc044166e1ca7243a87ff7920ed81125cf8146bccd322976"
+    },
+    "contracts/interfaces/external/IPool.sol": {
+      "keccak256": "0x3945b6735c0e1dd6ab956b5c57c4350dad215c82486115524904caeafce22f61"
+    },
+    "contracts/interfaces/external/IPoolFactory.sol": {
+      "keccak256": "0x192c76c2384de2c3f5083d421d0da174d2d3d5218ed8b10afde65b0f6ae4be67"
+    },
+    "contracts/interfaces/external/IWETH9.sol": {
+      "keccak256": "0xb059e143d7d3864bfc53708d54bb2a35c9115d807de3ed75a6a033be24b33b6c"
+    },
+    "contracts/interfaces/external/SafeCast.sol": {
+      "keccak256": "0xd4c1c1b67f946b077d7c52a158113763a89a210fc2927b8491055a962ecd18c0"
+    },
+    "contracts/libraries/Commands.sol": {
+      "keccak256": "0xd82b29be1cdeb1634a02f5accf5e0b0b8328e878ec480fb1dd8348f7be8ae90a"
+    },
+    "contracts/libraries/Constants.sol": {
+      "keccak256": "0x08ce0ce1d2d1491ae4350724ef0448a601db8a729c79748b00014500608bd897"
+    },
+    "contracts/modules/Payments.sol": {
+      "keccak256": "0x2c1d48e2c1650e23f331ffa93cdf88e842a89e236c3ac6e8240add1af9d2cd74"
+    },
+    "contracts/modules/Permit2Payments.sol": {
+      "keccak256": "0x7b25ee1230085b7fddff09be1de99080287e20c9a9cb2592515c17e9c3add809"
+    },
+    "contracts/modules/topaz/v2/TopazV2Library.sol": {
+      "keccak256": "0x2b1b84d3b0172fc50785660ff5f0e9b22d002c31f1a5e6fee20a3a352d5385d2"
+    },
+    "contracts/modules/topaz/v2/V2SwapRouter.sol": {
+      "keccak256": "0xfe6f940d3af40c051b09334f2c845d91b06220102fbd6d99c9da53d477dd7e72"
+    },
+    "contracts/modules/topaz/v3/BytesLib.sol": {
+      "keccak256": "0x5bd530d442e1f384e9559d2f2c9c61fa2c672b94dc2ffef9021efd79c7801309"
+    },
+    "contracts/modules/topaz/v3/V3Path.sol": {
+      "keccak256": "0x5e6242033f04b7fe68a1e5fec6f07396e3d7b2fbaa57cc0dbd0583e07453a1ff"
+    },
+    "contracts/modules/topaz/v3/V3SwapRouter.sol": {
+      "keccak256": "0x56e02b19d9f94792e5205443773ea775b5b0f7472b8fe4cb54e26772ebb99036"
+    },
+    "lib/forge-std/src/Base.sol": {
+      "keccak256": "0x926f1c9907b7dadb56dc920ae80dc473070989ab1f09b63e207ddc2d37110faa"
+    },
+    "lib/forge-std/src/Script.sol": {
+      "keccak256": "0x03fa97736ab2a9003b4769aae4d6bf909657204c8abceca1a9cf98dd2f761089"
+    },
+    "lib/forge-std/src/StdAssertions.sol": {
+      "keccak256": "0xce50b259ad03f10f6fd2d243adee8ddba86382977af9cc482ff3aebe25bbd4e0"
+    },
+    "lib/forge-std/src/StdChains.sol": {
+      "keccak256": "0x82eeb7cc1357c2e058529b3c74cc77a908a54eafd2adbe561b225b72f2f3aa24"
+    },
+    "lib/forge-std/src/StdCheats.sol": {
+      "keccak256": "0x0d25ef684a8390fe275153f2e34db48d6e62007e7e4f44544688fa4621f2bc3b"
+    },
+    "lib/forge-std/src/StdConstants.sol": {
+      "keccak256": "0xdee8966717b8a40d2b0c365441a89c89120c3e193c84c2ebc99d0e60c5593878"
+    },
+    "lib/forge-std/src/StdError.sol": {
+      "keccak256": "0xb4cb5388cd4160b73fe3d86716029c6b75dc725331bb9a3e0ce53ecb4a1d9adc"
+    },
+    "lib/forge-std/src/StdInvariant.sol": {
+      "keccak256": "0xc21dc235e4bde145caa5747f9a5d401e6fa25727bf482141e7420c26efc3ea73"
+    },
+    "lib/forge-std/src/StdJson.sol": {
+      "keccak256": "0xb447a259662beb85bf61f954880f1edccfc26e760491537946c14e9d22ea77ae"
+    },
+    "lib/forge-std/src/StdMath.sol": {
+      "keccak256": "0xe1470a10c3011dd00420b85416ae167c8be911df26823b3391353b2c13de400d"
+    },
+    "lib/forge-std/src/StdStorage.sol": {
+      "keccak256": "0xdea944ca5a7cb335ddfee5b11696cf5261c669437a3ecabfa961240113183195"
+    },
+    "lib/forge-std/src/StdStyle.sol": {
+      "keccak256": "0xfc22f4922ccc685b9efd71b54f5b909e41df7ef73519f0d09722f4fca06c5cbf"
+    },
+    "lib/forge-std/src/StdToml.sol": {
+      "keccak256": "0x4e20a1b29b85d8e83a85cfcc32a955cb838cffa7e010c92f354221e6f0d8f97a"
+    },
+    "lib/forge-std/src/StdUtils.sol": {
+      "keccak256": "0x976df39d6705b42d658ab57ff6f3668f7934a78015a2ff50465dc6bb18a14a7e"
+    },
+    "lib/forge-std/src/Test.sol": {
+      "keccak256": "0x4569fc48599f8cc841336a8727616814065c145f771bc7b2f8dc3e3393b8f4bd"
+    },
+    "lib/forge-std/src/Vm.sol": {
+      "keccak256": "0x8465b9b4d46cd13e4886f350d2172e2f3024c5f3c763202e63ce234c07ece288"
+    },
+    "lib/forge-std/src/console.sol": {
+      "keccak256": "0xb501ada090cfb86d6101284ad4fcbd37513b2f07997aaf160ac51cb606400df3"
+    },
+    "lib/forge-std/src/console2.sol": {
+      "keccak256": "0x27ce53a34b674228d19bd57c1a38f20818b5f88fccd0a69c88cdd086a0ded1d6"
+    },
+    "lib/forge-std/src/interfaces/IMulticall3.sol": {
+      "keccak256": "0x946a8ca9f2e2c69d9d70280de4b599b6396c18770d290bc0506572e66a316e42"
+    },
+    "lib/forge-std/src/safeconsole.sol": {
+      "keccak256": "0xfe5517cddd00783f6d2e1c1c17accb3f431c528ad54aef41369be603afbc784a"
+    },
+    "lib/openzeppelin-contracts/contracts/proxy/Clones.sol": {
+      "keccak256": "0x01f055f5c26ba25d7f83e9aa9ba877fbea4d0bf22227de046ea67494bc932999"
+    },
+    "lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol": {
+      "keccak256": "0x287b55befed2961a7eabd7d7b1b2839cbca8a5b80ef8dcbb25ed3d4c2002c305"
+    },
+    "lib/permit2/src/interfaces/IAllowanceTransfer.sol": {
+      "keccak256": "0x37f0ac203b6ef605c9533e1a739477e8e9dcea90710b40e645a367f8a21ace29"
+    },
+    "lib/permit2/src/interfaces/IEIP712.sol": {
+      "keccak256": "0xfdccf2b9639070803cd0e4198427fb0df3cc452ca59bd3b8a0d957a9a4254138"
+    },
+    "lib/permit2/src/libraries/SafeCast160.sol": {
+      "keccak256": "0x8a34e2beac108d74f89510c949983212b5f09307a93ee9e17a9d50e93f6bc8e9"
+    },
+    "lib/solmate/src/tokens/ERC20.sol": {
+      "keccak256": "0xcdfd8db76b2a3415620e4d18cc5545f3d50de792dbf2c3dd5adb40cbe6f94b10"
+    },
+    "lib/solmate/src/utils/SafeTransferLib.sol": {
+      "keccak256": "0x2725cc1d6f78a6aba23f6b5421f064dea9dfdadeb4689bf987f8962d62383746"
+    },
+    "script/DeployUniversalRouter.s.sol": {
+      "keccak256": "0x22ab45ffc455b5d781fb7b603f3c7ab5cd4ea529410835d6a3ab01f4e451cf4f"
+    },
+    "script/constants/BscMainnet.sol": {
+      "keccak256": "0xd51acfe84d239228389086e3872d790b093887dd13f991f4a310d94400deed84"
+    },
+    "script/deployParameters/DeployBscMainnet.s.sol": {
+      "keccak256": "0xd1c9ac89dfc4bb312665d2bdf148300899c68664c77d031bf4b740600a0d1953"
+    },
+    "test/fork/BaseForkFixture.t.sol": {
+      "keccak256": "0xda870c3b35fe1c47a072c84b21cc56372be5757330bd4e139eac3c85f9e67150"
+    },
+    "test/fork/DeployedRouter.t.sol": {
+      "keccak256": "0x60211324d9a4a2d0e21e98f3f6fa9fb7860457fc397398723ae9e45cc5f46b83"
+    },
+    "test/fork/PoolAddresses.t.sol": {
+      "keccak256": "0xe22d78aa11c3300342a166182c8a3f8b690c81afc8af3f29bf083281219a9975"
+    },
+    "test/fork/TopazCL.t.sol": {
+      "keccak256": "0xf1461fc01530eb1eb82ba349aec780d1b46459c11c1eeb1a39e71276bf1ec89a"
+    },
+    "test/fork/TopazMixed.t.sol": {
+      "keccak256": "0x0bef7e6e1890f3b8a4a59987d64097b8dfd04198463160a0980d066dcc7d460e"
+    },
+    "test/fork/TopazV2.t.sol": {
+      "keccak256": "0xf9159d8c41d51fa750ac437732eece9eb9a63629837462be8c6465160edf0376"
+    },
+    "test/fork/UniversalRouter.t.sol": {
+      "keccak256": "0xeb4a78b685a574c92b253e1b7c129e5a2c09e6f2804aa0e2039d79080d364b65"
+    },
+    "test/interfaces/IMixedRouteQuoterV1.sol": {
+      "keccak256": "0xc90fa33efef9846c2f61b0032c331542aacbc7711d7a75337e49a1dd2f42c673"
+    },
+    "test/interfaces/IQuoterV2.sol": {
+      "keccak256": "0x61b4f13faa5ab35cca78d621ddd7c0172c9712572098a4e953fd7403265a3827"
+    }
+  }
+}

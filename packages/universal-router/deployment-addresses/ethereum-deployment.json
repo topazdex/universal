@@ -1,0 +1,39 @@
+{
+  "chainId": 1,
+  "UniversalRouter": "0x606794d37991A426a189fD9FA8664D339A77f8ae",
+  "transactionHash": "0x292d58b69f4cd791bd7a60b9c179177003dc644726a2da92eb8956107da5636c",
+  "blockNumber": 25958895,
+  "blockHash": "0x72044efbb3dc379fbd1cea4a82e5682ee7f0c01055e702c9efbc258cfa2cdbb3",
+  "deployer": "0xd7E8557B8C78E131a9fa893aE12E8c2818234AEA",
+  "nonce": 17,
+  "gasUsed": "3531386",
+  "effectiveGasPriceWei": "66193878",
+  "executionFeeETH": "0.000233756134054908",
+  "constructorParameters": {
+    "permit2": "0x000000000022D473030F116dDEE9F6B43aC78BA3",
+    "weth9": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+    "v2Factory": "0x1E3aC31cF96b20619c913384C9bf6010A824fB95",
+    "v2Implementation": "0x8776BE6cd50BB78414c655bc8bF9e86A0989722F",
+    "clFactory": "0xaa5865dC3A60b25D305226d66fd573021f0D8fFB",
+    "clImplementation": "0x2DaA7cF731334b4Cd1c2E4E01E97Ca67F4B9C6AE"
+  },
+  "compiler": {
+    "version": "0.8.17+commit.8df45f5f"
+  },
+  "optimizer": {
+    "enabled": true,
+    "runs": 1000000
+  },
+  "evmVersion": "london",
+  "creationInputHash": "0x297ae13672577f33f09bd0f9f0a965f34f6d4444ed1c6bb157e0fb07ab590137",
+  "runtimeCodeHash": "0x4823f62b24dca58ea554465dd16b95b8a3b8981f458ccba0276318a532eb9d0a",
+  "runtimeCodeBytes": 16003,
+  "creationInputVerified": true,
+  "artifactFile": "ethereum-router-artifact.json",
+  "artifactSha256": "d4bf119e2881cba8cc4a260a0b76176ebca6dc9daa9d93e53c0f551100fe0a66",
+  "explorerVerification": "verified on Etherscan on 2026-09-12",
+  "runtimeAndImmutablesVerified": true,
+  "explorerVerificationUrl": "https://etherscan.io/address/0x606794d37991A426a189fD9FA8664D339A77f8ae#code",
+  "explorerVerificationCheckedAt": "2026-09-12T06:57:30.716Z",
+  "verificationEvidenceFile": "../../../docs/evidence/universal-router-source-verification-2026-09-12.json"
+}

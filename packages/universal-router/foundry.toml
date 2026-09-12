@@ -33,9 +33,13 @@ runs = 1000
 [rpc_endpoints]
 bsc = "${BSC_MAINNET_RPC}"
 bsc_testnet = "${BSC_TESTNET_RPC}"
+robinhood = "${ROBINHOOD_RPC_URL}"
+base = "${BASE_RPC_URL}"
+ethereum = "${ETHEREUM_RPC_URL}"
 
 # BscScan's standalone V1 API is retired; verification goes through the unified Etherscan V2
 # endpoint, where one key covers every supported chain
 [etherscan]
 bsc = { key = "${ETHERSCAN_API_KEY}", chain = 56 }
 bsc_testnet = { key = "${ETHERSCAN_API_KEY}", chain = 97 }
+ethereum = { key = "${ETHERSCAN_API_KEY}", chain = 1 }

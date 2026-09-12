@@ -1,5 +1,7 @@
 # Frontend integration
 
+For chain selection, unified subgraphs and the Robinhood deployment, see [multichain setup](MULTICHAIN.md). BNB examples below retain chain 56 as the default.
+
 How to get a quote from the Topaz routing API and execute it through the Topaz Universal Router.
 
 The service does the routing, the pricing and the calldata encoding. The frontend does three things:

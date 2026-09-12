@@ -1,0 +1,344 @@
+{
+  "checkedAt": "2026-09-12T05:25:38.652749+00:00",
+  "app": "topaz-routing-api",
+  "apiUrl": "https://quote.topazdex.com",
+  "release": {
+    "version": 16,
+    "status": "complete",
+    "createdAt": "2026-09-12T05:23:40Z"
+  },
+  "image": "registry.fly.io/topaz-routing-api:deployment-01M2A13S0B88AYKMDWVGW33XV7",
+  "imageManifestDigest": "sha256:0923185092a902cfbf8fea17635aed0c7c8ca2c8821cd9430c56b21b3795cad5",
+  "source": {
+    "path": "packages/sdk-core/src/chains.ts",
+    "sha256": "dbc4f54475146384f26cf53d2cb76c6f592907b5ec06303c4806924440b5369c"
+  },
+  "machine": {
+    "id": "e820435f372648",
+    "state": "started",
+    "region": "ord",
+    "healthChecks": [
+      {
+        "name": "servicecheck-00-http-3000",
+        "status": "passing"
+      }
+    ]
+  },
+  "runtimeDefaultsMatchResearch": true,
+  "verifiedChainTokenEntries": 20,
+  "runtimeConfig": {
+    "chains": [
+      {
+        "chainId": 4663,
+        "tokens": [
+          {
+            "symbol": "WETH",
+            "address": "0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73",
+            "decimals": 18
+          },
+          {
+            "symbol": "USDG",
+            "address": "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168",
+            "decimals": 6
+          },
+          {
+            "symbol": "xTOPAZ",
+            "address": "0x1aA89C4Ab9884Cb65B759A3Cc3A1690744d687a6",
+            "decimals": 18
+          }
+        ]
+      },
+      {
+        "chainId": 8453,
+        "tokens": [
+          {
+            "symbol": "WETH",
+            "address": "0x4200000000000000000000000000000000000006",
+            "decimals": 18
+          },
+          {
+            "symbol": "USDC",
+            "address": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+            "decimals": 6
+          },
+          {
+            "symbol": "cbBTC",
+            "address": "0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf",
+            "decimals": 8
+          },
+          {
+            "symbol": "wstETH",
+            "address": "0xc1CBa3fCea344f92D9239c08C0568f6F2F0ee452",
+            "decimals": 18
+          },
+          {
+            "symbol": "cbETH",
+            "address": "0x2Ae3F1Ec7F1F5012CFEab0185bfc7aa3cf0DEc22",
+            "decimals": 18
+          },
+          {
+            "symbol": "EURC",
+            "address": "0x60a3E35Cc302bFA44Cb288Bc5a4F316Fdb1adb42",
+            "decimals": 6
+          },
+          {
+            "symbol": "AERO",
+            "address": "0x940181a94A35A4569E4529A3CDfB74e38FD98631",
+            "decimals": 18
+          },
+          {
+            "symbol": "xTOPAZ",
+            "address": "0x1aA89C4Ab9884Cb65B759A3Cc3A1690744d687a6",
+            "decimals": 18
+          }
+        ]
+      },
+      {
+        "chainId": 1,
+        "tokens": [
+          {
+            "symbol": "WETH",
+            "address": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+            "decimals": 18
+          },
+          {
+            "symbol": "USDC",
+            "address": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+            "decimals": 6
+          },
+          {
+            "symbol": "USDT",
+            "address": "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+            "decimals": 6
+          },
+          {
+            "symbol": "DAI",
+            "address": "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+            "decimals": 18
+          },
+          {
+            "symbol": "USDS",
+            "address": "0xdC035D45d973E3EC169d2276DDab16f1e407384F",
+            "decimals": 18
+          },
+          {
+            "symbol": "WBTC",
+            "address": "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599",
+            "decimals": 8
+          },
+          {
+            "symbol": "cbBTC",
+            "address": "0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf",
+            "decimals": 8
+          },
+          {
+            "symbol": "wstETH",
+            "address": "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0",
+            "decimals": 18
+          },
+          {
+            "symbol": "xTOPAZ",
+            "address": "0x1aA89C4Ab9884Cb65B759A3Cc3A1690744d687a6",
+            "decimals": 18
+          }
+        ]
+      }
+    ],
+    "enabledChains": [
+      56,
+      4663,
+      8453,
+      1
+    ],
+    "baseTokenOverrides": []
+  },
+  "productionApiChecks": {
+    "checkedAt": "2026-09-12T05:24:30.181Z",
+    "results": [
+      {
+        "label": "health https://quote.topazdex.com",
+        "status": 200,
+        "elapsedMs": 336,
+        "body": {
+          "status": "ok",
+          "chainId": 56,
+          "chainIds": [
+            56,
+            4663,
+            8453,
+            1
+          ]
+        }
+      },
+      {
+        "label": "health https://topaz-routing-api.fly.dev",
+        "status": 200,
+        "elapsedMs": 382,
+        "body": {
+          "status": "ok",
+          "chainId": 56,
+          "chainIds": [
+            56,
+            4663,
+            8453,
+            1
+          ]
+        }
+      },
+      {
+        "label": "unsupported chain rejected",
+        "status": 400,
+        "elapsedMs": 335,
+        "error": "Unsupported chainId 137"
+      },
+      {
+        "label": "spoke 1",
+        "status": 404,
+        "elapsedMs": 1002,
+        "error": "No route found"
+      },
+      {
+        "label": "spoke 8453",
+        "status": 404,
+        "elapsedMs": 1097,
+        "error": "No route found"
+      },
+      {
+        "label": "spoke 4663",
+        "status": 404,
+        "elapsedMs": 1145,
+        "error": "No route found"
+      },
+      {
+        "label": "BNB explicit chain POST exact output",
+        "status": 200,
+        "elapsedMs": 2734,
+        "chainId": 56,
+        "blockNumber": 121397393,
+        "tradeType": "exactOut",
+        "quote": "1362565044428516",
+        "quoteDecimals": "0.001362565044428516",
+        "routes": 1,
+        "router": "0x691e6171e0a434FfE5C9f1759621D05b9efcF6A6",
+        "calldataBytes": 772
+      },
+      {
+        "label": "BNB default exact input with calldata",
+        "status": 200,
+        "elapsedMs": 2887,
+        "chainId": 56,
+        "blockNumber": 121397393,
+        "tradeType": "exactIn",
+        "quote": "7339093019683990222",
+        "quoteDecimals": "7.339093019683990222",
+        "routes": 1,
+        "router": "0x691e6171e0a434FfE5C9f1759621D05b9efcF6A6",
+        "calldataBytes": 644
+      }
+    ]
+  },
+  "productionIntermediaryQuotes": {
+    "checkedAt": "2026-09-12T05:24:43.208Z",
+    "apiUrl": "https://quote.topazdex.com",
+    "results": [
+      {
+        "name": "USDG to PONS",
+        "status": 200,
+        "chainId": 4663,
+        "blockNumber": 60855368,
+        "quote": "0.166073832211611995",
+        "elapsedMs": 857,
+        "cache": "MISS",
+        "routes": [
+          {
+            "protocol": "CL",
+            "percent": 100,
+            "amountIn": "100000",
+            "amountOut": "166073832211611995",
+            "hops": [
+              {
+                "protocol": "cl",
+                "address": "0x8132252bd65E7C03F7B57739E1DB1c58d6Ee792F",
+                "tokenIn": "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168",
+                "tokenOut": "0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73",
+                "fee": 500,
+                "tickSpacing": 50
+              },
+              {
+                "protocol": "cl",
+                "address": "0x9990de5A2eadFa50112077dAE6630864d29ac309",
+                "tokenIn": "0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73",
+                "tokenOut": "0x39dBED3a2bd333467115dE45665cC57F813C4571",
+                "fee": 500,
+                "tickSpacing": 50
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "PONS to USDG",
+        "status": 200,
+        "chainId": 4663,
+        "blockNumber": 60855394,
+        "quote": "0.060093",
+        "elapsedMs": 563,
+        "cache": "MISS",
+        "routes": [
+          {
+            "protocol": "CL",
+            "percent": 100,
+            "amountIn": "100000000000000000",
+            "amountOut": "60093",
+            "hops": [
+              {
+                "protocol": "cl",
+                "address": "0x9990de5A2eadFa50112077dAE6630864d29ac309",
+                "tokenIn": "0x39dBED3a2bd333467115dE45665cC57F813C4571",
+                "tokenOut": "0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73",
+                "fee": 500,
+                "tickSpacing": 50
+              },
+              {
+                "protocol": "cl",
+                "address": "0x8132252bd65E7C03F7B57739E1DB1c58d6Ee792F",
+                "tokenIn": "0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73",
+                "tokenOut": "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168",
+                "fee": 500,
+                "tickSpacing": 50
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "productionNativeQuotesAndSimulations": {
+    "checkedAt": "2026-09-12T05:24:44.069Z",
+    "results": [
+      {
+        "type": "exactIn",
+        "status": 200,
+        "chainId": 4663,
+        "block": 60855368,
+        "quote": "4.172873765339759467",
+        "quoteElapsedMs": 1405,
+        "router": "0x268d1C8a538Ecf6628838C11d581e1EABD13D6A4",
+        "simulationPassed": true,
+        "cache": "MISS"
+      },
+      {
+        "type": "exactOut",
+        "status": 200,
+        "chainId": 4663,
+        "block": 60855400,
+        "quote": "0.000239624057093603",
+        "quoteElapsedMs": 504,
+        "router": "0x268d1C8a538Ecf6628838C11d581e1EABD13D6A4",
+        "simulationPassed": true,
+        "cache": "MISS"
+      }
+    ]
+  },
+  "swapTransactionsBroadcast": false
+}
