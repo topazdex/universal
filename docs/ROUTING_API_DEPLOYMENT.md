@@ -99,8 +99,8 @@ Choices baked into `fly.toml`, and when to change them:
 | --- | --- | --- |
 | `primary_region` | `ord` | put the app near **your RPC provider**, not near your users — a quote is ~50 sequential-ish round trips to the RPC and one to the client |
 | `auto_stop_machines` | `off` | a cold start costs seconds on top of an already multi-second quote |
-| `min_machines_running` | 1 | same reason |
-| `concurrency.soft_limit` | 15 | a quote holds the request open while waiting on the RPC, so a machine saturates at a low request count |
+| `min_machines_running` | 2 | same reason; two Machines so one failing does not take the API down |
+| `concurrency.soft_limit` | 6 (hard 12) | a quote holds the request open while waiting on the RPC, so a machine saturates at a low request count; the app admits eight quotes at once per process |
 | `[[vm]] size` | `shared-cpu-2x`, 1GB | the work is IO bound; memory is for the pool cache |
 
 Scale out rather than up: `fly scale count 2 --region ord`. Watch your RPC provider's rate limit
@@ -172,7 +172,9 @@ cast call <to> <calldata> --value <value> --from <recipient> --rpc-url $BSC_MAIN
 
 ## 5. Put it behind a reverse proxy
 
-The service has no TLS, no auth and no rate limiting. Terminate TLS and rate limit upstream:
+The service has no TLS and no auth. It does rate limit per visitor (20-request burst, 5/s refill,
+keyed on the client IP Fly reports, or the socket address elsewhere) and admits eight quotes at a
+time per process, but terminate TLS upstream and add a second layer there if you can:
 
 ```nginx
 location /quote {

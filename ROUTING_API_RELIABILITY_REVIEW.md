@@ -2,7 +2,7 @@
 
 Reviewed: September 12, 2026. Application: `topaz-routing-api`.
 
-This document records a read-only review of the routing API in this repository, its running Fly Machine, and normal quote requests on all four supported chains. The original review below records the pre-hardening deployment. **The September 12 hardening implementation is committed locally but not deployed; see [ROUTING_API_HARDENING.md](ROUTING_API_HARDENING.md).** No application code, deployment configuration, machine count, or production secrets were changed during the review.
+This document records a read-only review of the routing API in this repository, its running Fly Machine, and normal quote requests on all four supported chains. The original review below records the pre-hardening deployment. **The September 12 hardening implementation was deployed later that day; see [ROUTING_API_HARDENING.md](ROUTING_API_HARDENING.md).** No application code, deployment configuration, machine count, or production secrets were changed during the review.
 
 The API already stays warm and can return ordinary quotes in under a second on some chains. The highest priorities are request validation, limits on expensive work, reliable RPC configuration, and a second warm instance. Increasing CPU alone would not address the main findings.
 

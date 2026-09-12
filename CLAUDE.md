@@ -14,7 +14,7 @@ Everything below is live. This is not a prototype.
 | | |
 | --- | --- |
 | Universal Router | [`0x691e6171e0a434FfE5C9f1759621D05b9efcF6A6`](https://bscscan.com/address/0x691e6171e0a434FfE5C9f1759621D05b9efcF6A6), verified |
-| Quote API | `https://quote.topazdex.com` (Fly app `topaz-routing-api`, region `ord`) |
+| Quote API | `https://quote.topazdex.com` (Fly app `topaz-routing-api`, two Machines in `ord`; BNB, Robinhood, Base, Ethereum) |
 | npm | seven packages under `@topazdex`, all at `0.1.0` |
 
 ## Layout
@@ -73,12 +73,12 @@ the network suites self-skip, which is silent: check the counts below.
 
 | package | tests |
 | --- | --- |
-| universal-router | 43 forge (1 skips without `DEPLOYED_UNIVERSAL_ROUTER`) |
-| smart-order-router | 32 |
-| routing-api | 51 |
+| universal-router | 46 forge (1 skips without `DEPLOYED_UNIVERSAL_ROUTER`, 3 without spoke RPCs) |
+| smart-order-router | 65 (6 skip without spoke RPCs) |
+| routing-api | 85 |
 | v2-sdk | 17 |
 | universal-router-sdk | 9 |
-| sdk-core | 7 |
+| sdk-core | 15 |
 | v3-sdk | 6 |
 | router-sdk | 5 |
 
@@ -108,6 +108,12 @@ versions) and publishes with npm.
 
 **The Permit2 EIP-712 domain has no `version` field.** Adding one yields a valid-looking signature
 that the router rejects.
+
+**ethers v5 hides why an `eth_call` failed.** `JsonRpcProvider.perform('call')` wraps *every* send
+failure — timeout, 429, socket error — in a `CALL_EXCEPTION` whose message says "missing revert
+data", with the real error under `error.error`. Anything that classifies RPC failures must unwrap
+to the innermost cause (`multicall.ts` does), and a test that mocks `provider.call` never sees the
+wrapper — inject at `send`.
 
 **Tuning parameters interact.** `maxRoutesToQuote` derives from the route count; when local
 pre-ranking narrowed that count, the screen silently shrank from 13 survivors to 5 and quotes lost up
@@ -163,10 +169,13 @@ in `~/.npmrc` (a normal login session forces an OTP per publish).
 
 ## Open items
 
-- **No rate limiting.** `quote.topazdex.com` is DNS-only through Cloudflare with no auth. Each quote
-  is ~16 `eth_call`s against *public* RPCs, so one script can degrade it for everyone. Proxying it
-  (orange cloud) with a ~5 req/s rule on `/quote` is the fix. Do not cache `/quote` at the edge:
-  responses are block-specific and carry executable calldata.
+- **Rate limiting is per process only.** `/quote` allows a 20-request burst and 5/s per visitor and
+  eight quotes in flight per Machine (`protection.ts`), but two Machines means double that, and
+  `quote.topazdex.com` is still DNS-only through Cloudflare. An edge rule would add a shared
+  ceiling. Do not cache `/quote` at the edge: responses are block-specific and carry executable
+  calldata.
+- **Every chain is on public RPCs.** No `ROUTING_RPC_URLS_<chainId>` secrets are set on Fly.
+  `mainnet.base.org` 429s under light load; `base-rpc.publicnode.com` fails over for it.
 - **No pool-state cache.** Identical quotes hit the response cache, but a quote differing only in
   amount re-reads every pool.
 - **Published packages lag the repo.** All seven `@topazdex` packages are on npm at `0.1.0`, but

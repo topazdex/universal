@@ -8,7 +8,6 @@
 # Enabled chains are in config/chains.production.json. This configuration uses public RPCs;
 # see docs/MULTICHAIN.md for per-chain configuration and private RPC endpoints.
 
-# Hardening configuration prepared for a future rollout; this commit is not a deployment.
 app = 'topaz-routing-api'
 # a quote is ~100 round trips to the RPC and one to the client, so this wants to sit near the RPC
 # provider rather than near users

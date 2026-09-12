@@ -6,7 +6,7 @@ supplied — the Universal Router calldata that executes it.
 
 See [multichain configuration](../../docs/MULTICHAIN.md) to serve BNB, Robinhood, Base, Ethereum and future deployments from one API.
 
-See [routing hardening](../../ROUTING_API_HARDENING.md) for validation, quotas, deadlines and private RPC overrides. These changes are committed locally and are **not deployed**.
+See [routing hardening](../../ROUTING_API_HARDENING.md) for validation, quotas, deadlines and private RPC overrides. Deployed to `quote.topazdex.com` on September 12, 2026.
 
 ## Running
 
