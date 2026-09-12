@@ -112,9 +112,22 @@ export class TopazRouter {
     swapOptions?: SwapOptions,
     config: RoutingConfig = {}
   ): Promise<SwapRoute | null> {
-    for (const [key, min, max] of [['maxHops', 1, 3], ['maxSplits', 1, 4], ['minSplits', 1, 4], ['distributionPercent', 5, 100], ['maxRoutesPerProtocol', 1, 60], ['maxRoutesToQuote', 1, 32], ['maxRoutesToScreen', 1, 180], ['subgraphPoolCount', 1, 1000]] as const) {
+    // maxRoutesToScreen and maxRoutesToQuote have no ceiling on purpose: the route set is already
+    // bounded by maxRoutesPerProtocol, and pricing every route is how quote quality gets measured
+    for (const [key, min, max] of [
+      ['maxHops', 1, 3],
+      ['maxSplits', 1, 4],
+      ['minSplits', 1, 4],
+      ['distributionPercent', 5, 100],
+      ['maxRoutesPerProtocol', 1, 60],
+      ['maxRoutesToQuote', 1, Number.MAX_SAFE_INTEGER],
+      ['maxRoutesToScreen', 1, Number.MAX_SAFE_INTEGER],
+      ['subgraphPoolCount', 1, 1000]
+    ] as const) {
       const value = config[key]
-      if (value !== undefined && (!Number.isSafeInteger(value) || value < min || value > max)) throw new Error(`Invalid routing ${key}`)
+      if (value !== undefined && (!Number.isSafeInteger(value) || value < min || value > max)) {
+        throw new Error(`Invalid routing ${key}`)
+      }
     }
     if (100 % (config.distributionPercent ?? 5) !== 0) throw new Error('Invalid routing distributionPercent')
     if ((config.minSplits ?? 1) > (config.maxSplits ?? 3)) throw new Error('Invalid routing split limits')

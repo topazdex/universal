@@ -9,6 +9,7 @@ import { createApp } from './server'
 
 const RPC = process.env.BSC_MAINNET_RPC
 const FORK_BLOCK = process.env.FORK_BLOCK ? Number(process.env.FORK_BLOCK) : undefined
+const FORK_LIMITS = { rpcTimeoutMs: 120_000, quoteTimeoutMs: 300_000, multicallBatchSize: 5 }
 const ERC20_ABI = ['function balanceOf(address) view returns (uint256)']
 
 const describeIfRpc = RPC ? describe : describe.skip
@@ -31,7 +32,8 @@ describeIfRpc('routing-api', () => {
     const router = await deployUniversalRouter(signer)
     routerAddress = router.address
 
-    app = createApp({ rpcUrl, universalRouterAddress: routerAddress })
+    // a cold anvil fork pulls state from upstream on first touch, far slower than any live endpoint
+    app = createApp({ rpcUrl, universalRouterAddress: routerAddress, ...FORK_LIMITS })
   }, 300_000)
 
   afterAll(() => anvil?.stop())

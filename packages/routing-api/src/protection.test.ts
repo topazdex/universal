@@ -29,7 +29,7 @@ it('bounds bodies, ignores forged forwarding headers and leaves health responsiv
   const app = createApp({ rpcUrl: 'http://unused.invalid' })
   expect((await request(app).post('/quote').send({ padding: 'a'.repeat(17000) })).status).toBe(413)
   const statuses: number[] = []
-  for (let i = 0; i < 16; i++) statuses.push((await request(app).get('/quote').set('X-Forwarded-For', `192.0.2.${i}`)).status)
+  for (let i = 0; i < 30; i++) statuses.push((await request(app).get('/quote').set('X-Forwarded-For', `192.0.2.${i}`)).status)
   expect(statuses).toContain(429)
   expect((await request(app).get('/health')).status).toBe(200)
 })

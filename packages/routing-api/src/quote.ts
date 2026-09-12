@@ -103,7 +103,9 @@ export class QuoteService {
     /** Overrides the default routing hubs; resolved on first use */
     private readonly baseTokenAddresses?: string[],
     private readonly cache: ResponseCache<QuoteResponse | null> = new ResponseCache(),
-    private readonly beforeQuote?: () => Promise<void>
+    private readonly beforeQuote?: () => Promise<void>,
+    /** Wall clock one computed quote may spend before its RPC work is abandoned */
+    private readonly quoteTimeoutMs?: number
   ) {}
 
   public async quote(request: QuoteRequest): Promise<QuoteResponse | null> {
@@ -129,7 +131,7 @@ export class QuoteService {
   }
 
   private computeQuote(request: QuoteRequest): Promise<QuoteResponse | null> {
-    return withQuoteBudget(() => this.computeQuoteBody(request))
+    return withQuoteBudget(() => this.computeQuoteBody(request), this.quoteTimeoutMs)
   }
 
   private async computeQuoteBody(request: QuoteRequest): Promise<QuoteResponse | null> {

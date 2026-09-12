@@ -1,6 +1,15 @@
 import { isIP } from 'net'
 import { RequestHandler } from 'express'
 
+/**
+ * Token bucket per visitor. The sustained rate is per IP (per /64 for IPv6), so it has to leave
+ * room for several people behind one NAT each polling a swap form, while the burst absorbs a
+ * user typing an amount. Anything heavier is bounded by the active-quote gate below, not here.
+ */
+const BURST = 20
+const REFILL_PER_SECOND = 5
+const MAX_ACTIVE_QUOTES = 8
+
 /** Process-local quotas; Fly supplies the visitor identity, never X-Forwarded-For. */
 export function quoteProtection(): RequestHandler {
   const visitors = new Map<string, { tokens: number; at: number }>()
@@ -11,14 +20,14 @@ export function quoteProtection(): RequestHandler {
     const supplied = process.env.FLY_APP_NAME ? request.get('Fly-Client-IP') : request.socket.remoteAddress
     const key = clientNetwork(supplied ?? '')
     const now = Date.now()
-    const entry = visitors.get(key) ?? { tokens: 12, at: now }
-    entry.tokens = Math.min(12, entry.tokens + (now - entry.at) / 1000)
+    const entry = visitors.get(key) ?? { tokens: BURST, at: now }
+    entry.tokens = Math.min(BURST, entry.tokens + ((now - entry.at) / 1000) * REFILL_PER_SECOND)
     entry.at = now
     visitors.delete(key); visitors.set(key, entry)
     if (visitors.size > 10_000) visitors.delete(visitors.keys().next().value as string)
     if (entry.tokens < 1) { response.setHeader('Retry-After', '1'); response.status(429).json({ error: 'Rate limit exceeded' }); return }
     entry.tokens--
-    if (active >= 8) { response.setHeader('Retry-After', '1'); response.status(503).json({ error: 'Quote service is busy' }); return }
+    if (active >= MAX_ACTIVE_QUOTES) { response.setHeader('Retry-After', '1'); response.status(503).json({ error: 'Quote service is busy' }); return }
     if (request.originalUrl.length > 8192) { response.status(414).json({ error: 'Request URL too long' }); return }
     active++
     let released = false

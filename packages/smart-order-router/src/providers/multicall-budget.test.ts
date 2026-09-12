@@ -5,11 +5,27 @@ import { CurrencyAmount, nativeOnChain, TradeType, USDT } from '@topazdex/sdk-co
 
 afterEach(() => jest.restoreAllMocks())
 
-it.each(['RPC HTTP 429', 'network timeout', 'quote_timeout', 'rpc_budget_exceeded'])('does not amplify a transport outage: %s', async message => {
+const fifteenCalls = Array.from({ length: 15 }, () => ({ target: USDT.address, callData: '0x' }))
+
+// the error is injected at `send`, not `call`: ethers wraps every eth_call failure in a
+// CALL_EXCEPTION on the way up, and that wrapper is what the batch handler actually sees
+it.each(['RPC HTTP 429', 'network timeout', 'quote_timeout', 'rpc_budget_exceeded', 'fetch failed'])(
+  'does not amplify a transport outage: %s',
+  async message => {
+    const provider = new StaticJsonRpcProvider('http://unused.invalid', 56)
+    const send = jest.spyOn(provider, 'send').mockRejectedValue(new Error(message))
+    await expect(new MulticallProvider(provider).call(fifteenCalls)).rejects.toMatchObject({ error: { message } })
+    expect(send).toHaveBeenCalledTimes(1)
+  }
+)
+
+it.each(['out of gas', 'EVM error OutOfGas'])('still halves a batch the node rejected on gas, down to the failing call: %s', async message => {
   const provider = new StaticJsonRpcProvider('http://unused.invalid', 56)
-  const call = jest.spyOn(provider, 'call').mockRejectedValue(new Error(message))
-  await expect(new MulticallProvider(provider).call(Array.from({ length: 15 }, () => ({ target: USDT.address, callData: '0x' })))).rejects.toThrow(message)
-  expect(call).toHaveBeenCalledTimes(1)
+  const send = jest.spyOn(provider, 'send').mockRejectedValue(new Error(message))
+  const results = await new MulticallProvider(provider).call(fifteenCalls)
+  expect(results).toHaveLength(15)
+  expect(results.every(result => !result.success)).toBe(true)
+  expect(send).toHaveBeenCalledTimes(29)
 })
 
 it('rejects a zero split step before reading chain state', async () => {

@@ -85,9 +85,7 @@ export class MulticallProvider {
     try {
       return await this.callOnce(calls, options)
     } catch (error) {
-      const message = String((error as Error)?.message ?? '').toLowerCase()
-      const code = (error as { code?: string })?.code
-      if (/timeout|429|rate limit|too many requests|network|connection|rpc_budget|quote_timeout|service_busy/.test(message) || (code !== 'CALL_EXCEPTION' && !/execution reverted|out of gas|gas required exceeds/.test(message))) throw error
+      if (!isGasCeiling(error)) throw error
       if (calls.length === 1) {
         return [{ success: false, returnData: '0x' }]
       }
@@ -121,4 +119,29 @@ export class MulticallProvider {
       returnData: entry.returnData
     }))
   }
+}
+
+interface NestedError {
+  message?: string
+  code?: string
+  error?: unknown
+}
+
+/**
+ * True only when the node executed the batch and rejected it for gas or a revert, so halving it
+ * can help. Anything else — a timeout, a 429, a socket error, a spent quote budget — would fail
+ * identically for both halves, and splitting would just turn one failed request into many.
+ *
+ * ethers' `perform('call')` wraps *every* send failure in a CALL_EXCEPTION whose message says
+ * "missing revert data", with the real error nested under `error`, so the transport error has to
+ * be dug out from the innermost cause before it can be classified.
+ */
+function isGasCeiling(error: unknown): boolean {
+  let cause = error as NestedError | undefined
+  while (cause?.error) cause = cause.error as NestedError
+  const message = String(cause?.message ?? '').toLowerCase()
+  // geth says "out of gas", anvil "EVM error OutOfGas"
+  if (/execution reverted|out ?of ?gas|gas required exceeds|gas limit/.test(message)) return true
+  // a CALL_EXCEPTION with nothing nested is ethers reporting revert data it could not decode
+  return cause === error && (error as NestedError).code === 'CALL_EXCEPTION'
 }

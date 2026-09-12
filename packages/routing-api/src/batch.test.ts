@@ -10,6 +10,7 @@ import { createApp } from './server'
 
 const RPC = process.env.BSC_MAINNET_RPC
 const FORK_BLOCK = process.env.FORK_BLOCK ? Number(process.env.FORK_BLOCK) : undefined
+const FORK_LIMITS = { rpcTimeoutMs: 120_000, quoteTimeoutMs: 300_000, multicallBatchSize: 5 }
 
 const ERC20_ABI = [
   'function balanceOf(address) view returns (uint256)',
@@ -52,7 +53,8 @@ describeIfRpc('quoting for an EIP-5792 batch, where the Permit2 allowance is gra
 
     const router = await deployUniversalRouter(signer)
     routerAddress = router.address
-    app = createApp({ rpcUrl: `http://127.0.0.1:${port}`, universalRouterAddress: routerAddress })
+    // a cold anvil fork pulls state from upstream on first touch, far slower than any live endpoint
+    app = createApp({ rpcUrl: `http://127.0.0.1:${port}`, universalRouterAddress: routerAddress, ...FORK_LIMITS })
 
     usdt = new Contract(USDT.address, ERC20_ABI, anvil.provider)
     permit2 = new Contract(PERMIT2_ADDRESS, PERMIT2_ABI, anvil.provider)

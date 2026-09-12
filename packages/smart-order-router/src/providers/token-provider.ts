@@ -42,7 +42,8 @@ export class TokenProvider {
       for (const [i, address] of missing.entries()) {
         const decimalsResult = results[i * 2]
         const symbolResult = results[i * 2 + 1]
-        if (!decimalsResult?.success) continue
+        // Multicall3 reports a call to an address with no code as a success with empty data
+        if (!decimalsResult?.success || decimalsResult.returnData === '0x') continue
 
         const [decimals] = ERC20_INTERFACE.decodeFunctionResult('decimals', decimalsResult.returnData)
         let symbol: string | undefined

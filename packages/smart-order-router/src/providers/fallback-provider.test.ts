@@ -75,6 +75,26 @@ describe('FallbackRpcProvider', () => {
       expect(other.sent).toHaveLength(0)
     })
 
+    it('does not fail over, or cool an endpoint down, when the caller spent its own quote budget', async () => {
+      // #given the deadline belongs to the quote, not to the endpoint that happened to be serving it
+      let calls = 0
+      const first = new ScriptedProvider('http://a', async () => {
+        calls++
+        if (calls === 1) throw Object.assign(new Error('quote_timeout'), { code: 'quote_timeout' })
+        return '0x1'
+      })
+      const other = new ScriptedProvider('http://b', ok('0x2'))
+      const provider = new FallbackRpcProvider([first, other], { cooldownMs: 60_000 })
+
+      // #when
+      await expect(provider.send('eth_call', [])).rejects.toThrow('quote_timeout')
+
+      // #then the second endpoint was never asked, and the first is still preferred next time
+      expect(other.sent).toHaveLength(0)
+      await expect(provider.send('eth_call', [])).resolves.toEqual('0x1')
+      expect(other.sent).toHaveLength(0)
+    })
+
     it('treats a rate limit as worth retrying elsewhere', async () => {
       // #given
       const limited = new ScriptedProvider('http://a', fails(new Error('429 too many requests')))

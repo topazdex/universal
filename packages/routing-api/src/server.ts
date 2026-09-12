@@ -63,6 +63,14 @@ export interface ChainServerConfig {
   baseTokens?: string[]
   /** How long an identical quote is reused; 0 disables caching. */
   quoteCacheTtlMs?: number
+  /**
+   * Per RPC attempt, including time spent queued behind other quotes. Default 3s: a public
+   * endpoint that takes longer than that on one call is not going to produce a usable quote.
+   * A cold anvil fork fetches state lazily and needs far more.
+   */
+  rpcTimeoutMs?: number
+  /** Deadline for one computed quote, after which its in-flight RPCs are aborted. Default 12s. */
+  quoteTimeoutMs?: number
 }
 
 export interface ServerConfig extends ChainServerConfig {
@@ -108,7 +116,15 @@ export function createApp(config: ServerConfig): Express {
     const cache = new ResponseCache<QuoteResponse | null>({ ttlMs: entry.quoteCacheTtlMs ?? config.quoteCacheTtlMs })
     let verified: Promise<void> | undefined
     services.set(id, {
-      quote: new QuoteService(router, tokenProvider, id, entry.baseTokens, cache, async () => services.get(id)!.verifyNetwork()),
+      quote: new QuoteService(
+        router,
+        tokenProvider,
+        id,
+        entry.baseTokens,
+        cache,
+        async () => services.get(id)!.verifyNetwork(),
+        entry.quoteTimeoutMs ?? config.quoteTimeoutMs
+      ),
       verifyNetwork: () =>
         verified ??
         (verified = provider
@@ -167,7 +183,13 @@ export function createApp(config: ServerConfig): Express {
       else if (error instanceof WorkLimitError) {
         response.setHeader('Retry-After', '1')
         response.status(error.code === 'quote_timeout' ? 504 : 503).json({ error: error.code })
-      } else response.status(502).json({ error: 'Quote provider unavailable' })
+      } else {
+        // the caller gets a generic answer; the operator gets the cause, minus anything that
+        // could be an endpoint credential
+        // eslint-disable-next-line no-console
+        console.error(`quote failed on chain ${source.chainId ?? chainId}: ${describeFailure(error)}`)
+        response.status(502).json({ error: 'Quote provider unavailable' })
+      }
     } finally { response.locals.releaseQuote?.() }
   }
 
@@ -243,11 +265,30 @@ function buildProvider(config: ChainServerConfig, chainId: number): StaticJsonRp
     ? PUBLIC_BSC_RPC_URLS
     : getChainConfig(chainId).rpcUrls
   if (urls.length === 0) throw new Error(`RPC URL is not configured for chain ${chainId}`)
-  return new FallbackRpcProvider(urls.slice(0, 2).map(url => new BoundedRpcProvider(url, chainId)), { chainId, validateChainId: true, maxAttempts: 2 })
+  return new FallbackRpcProvider(
+    urls.slice(0, 2).map((url) => new BoundedRpcProvider(url, chainId, config.rpcTimeoutMs)),
+    { chainId, validateChainId: true, maxAttempts: 2 }
+  )
 }
 
 interface QueryLike {
   [key: string]: unknown
+}
+
+/**
+ * The chain of messages from an error down to its root cause, for a log line. ethers wraps a
+ * failed eth_call in a CALL_EXCEPTION whose message says nothing about why the send failed, so
+ * the nested `error` is usually the interesting part. URLs are dropped: an RPC endpoint may
+ * carry its key in the path.
+ */
+function describeFailure(error: unknown): string {
+  const parts: string[] = []
+  for (let cause = error as { message?: string; error?: unknown } | undefined; cause; cause = cause.error as typeof cause) {
+    const message = String(cause.message ?? cause).replace(/https?:\/\/\S+/g, '<url>').slice(0, 300)
+    if (!parts.includes(message)) parts.push(message)
+    if (parts.length === 4) break
+  }
+  return parts.join(' <- ') || 'unknown error'
 }
 
 /**

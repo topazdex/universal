@@ -206,10 +206,17 @@ async function firstResolved(pending: Promise<number | undefined>[]): Promise<nu
  * True when the node answered and the answer would be the same everywhere: a revert, a gas
  * ceiling, an invalid argument. Anything else — timeout, socket error, 429, 5xx — is worth
  * asking a different endpoint.
+ *
+ * A caller that has spent its own quote budget is in the same position: the deadline or the RPC
+ * gate said no, not the endpoint, so retrying elsewhere only burns more of it and cooling the
+ * endpoint down would punish it for a failure it did not cause.
  */
 function isDeterministic(error: unknown): boolean {
   const code = (error as { code?: string })?.code
   if (code === 'CALL_EXCEPTION' || code === 'UNPREDICTABLE_GAS_LIMIT' || code === 'INVALID_ARGUMENT') {
+    return true
+  }
+  if (code === 'quote_timeout' || code === 'rpc_budget_exceeded' || code === 'service_busy') {
     return true
   }
   const message = String((error as { message?: string })?.message ?? '').toLowerCase()
