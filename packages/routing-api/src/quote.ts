@@ -1,5 +1,5 @@
 import { isCLPool, Protocol } from '@topazdex/router-sdk'
-import { nativeOnChain, Currency, CurrencyAmount, Percent, Token, TradeType } from '@topazdex/sdk-core'
+import { getChainConfig, hasWrappedNative, nativeOnChain, Currency, CurrencyAmount, Percent, Token, TradeType } from '@topazdex/sdk-core'
 import { RoutingConfig, SwapRoute, TokenProvider, TopazRouter } from '@topazdex/smart-order-router'
 import { Pool as V2Pool } from '@topazdex/v2-sdk'
 import { Pool as CLPool } from '@topazdex/v3-sdk'
@@ -184,9 +184,17 @@ export class QuoteService {
   }
 
   private async resolveCurrency(identifier: string): Promise<Currency> {
-    const native = nativeOnChain(this.chainId)
-    if (NATIVE_ALIASES.has(identifier.toLowerCase()) || identifier.toLowerCase() === native.symbol?.toLowerCase())
-      return native
+    const { nativeCurrency, gasToken, name } = getChainConfig(this.chainId)
+    const isNativeAlias =
+      NATIVE_ALIASES.has(identifier.toLowerCase()) || identifier.toLowerCase() === nativeCurrency.symbol.toLowerCase()
+    if (isNativeAlias && !hasWrappedNative(this.chainId)) {
+      // Arc: the router's WETH9 slot is a reverting stub, so a native leg can never execute
+      throw new BadRequestError(
+        `${name} has no wrapped native currency, so ${nativeCurrency.symbol} cannot be swapped natively` +
+          (gasToken ? `; use its ERC-20 ${gasToken.address}` : '')
+      )
+    }
+    if (isNativeAlias) return nativeOnChain(this.chainId)
     try {
       return await this.tokenProvider.getToken(identifier)
     } catch (error) {

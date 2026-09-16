@@ -1,11 +1,12 @@
 import { BigNumber } from '@ethersproject/bignumber'
 import { AnyRoute, isCLPool, TPool } from '@topazdex/router-sdk'
-import { Currency, CurrencyAmount, Price, Token, wrappedNativeOnChain } from '@topazdex/sdk-core'
+import { Currency, CurrencyAmount, gasTokenOnChain, getChainConfig, Price, Token } from '@topazdex/sdk-core'
 
 import { BASE_SWAP_GAS, CL_HOP_GAS, CL_TICK_CROSS_GAS, V2_HOP_GAS } from '../constants'
 
 export interface GasEstimate {
   gasUsed: BigNumber
+  /** In the chain's gas token: the wrapped native, or on Arc the USDC ERC-20 at 6 decimals */
   gasCostInNative: CurrencyAmount<Token>
   gasCostInQuoteToken: CurrencyAmount<Currency>
 }
@@ -16,7 +17,9 @@ export interface GasEstimate {
  * variable is how many initialised ticks a CL swap crosses.
  */
 export class GasModel {
-  private readonly wrappedNative: Token
+  private readonly gasToken: Token
+  /** Multiplies a native-denominated fee into gas-token units when their decimals differ (Arc: 1e-12) */
+  private readonly nativeToGasTokenScale: { numerator: bigint; denominator: bigint }
   private readonly nativePriceInQuoteToken: Price<Token, Currency> | undefined
 
   public constructor(
@@ -24,13 +27,19 @@ export class GasModel {
     private readonly quoteCurrency: Currency,
     pools: TPool[]
   ) {
-    this.wrappedNative = wrappedNativeOnChain(quoteCurrency.chainId)
-    this.nativePriceInQuoteToken = buildNativePrice(quoteCurrency, pools, this.wrappedNative)
+    this.gasToken = gasTokenOnChain(quoteCurrency.chainId)
+    const nativeDecimals = getChainConfig(quoteCurrency.chainId).nativeCurrency.decimals
+    const shift = this.gasToken.decimals - nativeDecimals
+    this.nativeToGasTokenScale =
+      shift >= 0
+        ? { numerator: 10n ** BigInt(shift), denominator: 1n }
+        : { numerator: 1n, denominator: 10n ** BigInt(-shift) }
+    this.nativePriceInQuoteToken = buildNativePrice(quoteCurrency, pools, this.gasToken)
   }
 
   /** True when the native gas cost can be expressed in the quote token */
   public get canPriceGas(): boolean {
-    return this.nativePriceInQuoteToken !== undefined || this.quoteCurrency.wrapped.equals(this.wrappedNative)
+    return this.nativePriceInQuoteToken !== undefined || this.quoteCurrency.wrapped.equals(this.gasToken)
   }
 
   public estimate(route: AnyRoute<Currency, Currency>, initializedTicksCrossed: number): GasEstimate {
@@ -42,7 +51,9 @@ export class GasModel {
 
     const gasUsed = BigNumber.from(gas)
     const gasCostWei = gasUsed.mul(this.gasPriceWei)
-    const gasCostInNative = CurrencyAmount.fromRawAmount(this.wrappedNative, gasCostWei.toString())
+    const { numerator, denominator } = this.nativeToGasTokenScale
+    const gasCostInGasToken = (BigInt(gasCostWei.toString()) * numerator) / denominator
+    const gasCostInNative = CurrencyAmount.fromRawAmount(this.gasToken, gasCostInGasToken.toString())
 
     return {
       gasUsed,
@@ -52,7 +63,7 @@ export class GasModel {
   }
 
   private toQuoteToken(gasCostInNative: CurrencyAmount<Token>): CurrencyAmount<Currency> {
-    if (this.quoteCurrency.wrapped.equals(this.wrappedNative)) {
+    if (this.quoteCurrency.wrapped.equals(this.gasToken)) {
       return CurrencyAmount.fromRawAmount(this.quoteCurrency, gasCostInNative.quotient)
     }
     if (!this.nativePriceInQuoteToken) {
@@ -63,31 +74,31 @@ export class GasModel {
 }
 
 /**
- * Finds a price for the native currency in the quote token, directly if a pool pairs them and otherwise through
+ * Finds a price for the gas token in the quote token, directly if a pool pairs them and otherwise through
  * one intermediate token. Deep pools win, since a thin pool would mis-state the gas cost.
  */
 function buildNativePrice(
   quoteCurrency: Currency,
   pools: TPool[],
-  wrappedNative: Token
+  gasToken: Token
 ): Price<Token, Currency> | undefined {
   const quoteToken = quoteCurrency.wrapped
-  if (quoteToken.equals(wrappedNative)) return undefined
+  if (quoteToken.equals(gasToken)) return undefined
 
-  const direct = bestPoolBetween(wrappedNative, quoteToken, pools)
+  const direct = bestPoolBetween(gasToken, quoteToken, pools)
   if (direct) {
-    const price = direct.priceOf(wrappedNative)
-    return new Price(wrappedNative, quoteCurrency, price.denominator, price.numerator)
+    const price = direct.priceOf(gasToken)
+    return new Price(gasToken, quoteCurrency, price.denominator, price.numerator)
   }
 
   for (const pool of pools) {
-    if (!pool.involvesToken(wrappedNative)) continue
-    const intermediate = pool.token0.equals(wrappedNative) ? pool.token1 : pool.token0
+    if (!pool.involvesToken(gasToken)) continue
+    const intermediate = pool.token0.equals(gasToken) ? pool.token1 : pool.token0
     const second = bestPoolBetween(intermediate, quoteToken, pools)
     if (!second) continue
 
-    const combined = pool.priceOf(wrappedNative).multiply(second.priceOf(intermediate))
-    return new Price(wrappedNative, quoteCurrency, combined.denominator, combined.numerator)
+    const combined = pool.priceOf(gasToken).multiply(second.priceOf(intermediate))
+    return new Price(gasToken, quoteCurrency, combined.denominator, combined.numerator)
   }
 
   return undefined

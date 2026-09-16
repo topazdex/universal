@@ -3,6 +3,7 @@ import { BigNumber } from '@ethersproject/bignumber'
 import { RouteV2 } from '@topazdex/router-sdk'
 import {
   CurrencyAmount,
+  gasTokenOnChain,
   getChainConfig,
   registerChain,
   nativeOnChain,
@@ -43,7 +44,29 @@ it.each([1, 4663, 8453])('prices native gas using chain %s wrapped native', (cha
   expect(model.canPriceGas).toBe(true)
 })
 
-it.each([1, 4663, 8453])('derives chain %s pool addresses from its factories', (chainId) => {
+it('prices Arc gas in the 6-decimal USDC ERC-20 from the 18-decimal native fee', () => {
+  const usdc = gasTokenOnChain(5042)
+  const other = new Token(5042, USDT.address, 18)
+  const pool = Pool.fromReserves(usdc, other, '100000000', '100000000000000000000', false)
+  // 20 gwei on Arc is 20e9 wei of an 18-decimal USDC balance
+  const model = new GasModel(BigNumber.from('20000000000'), usdc, [pool])
+  const gas = model.estimate(new RouteV2([pool], other, usdc), 0)
+  expect(gas.gasCostInNative.currency.equals(usdc)).toBe(true)
+  expect(gas.gasCostInNative.quotient.toString()).toBe(
+    gas.gasUsed.mul('20000000000').div('1000000000000').toString()
+  )
+  expect(gas.gasCostInQuoteToken.quotient.toString()).toBe(gas.gasCostInNative.quotient.toString())
+  expect(model.canPriceGas).toBe(true)
+
+  const otherQuoted = new GasModel(BigNumber.from('20000000000'), other, [pool])
+  expect(otherQuoted.canPriceGas).toBe(true)
+  // the pool prices 1 USDC (1e6) at 1e18 of the other token: a 1e-12 fee scale then 1e12 price
+  expect(otherQuoted.estimate(new RouteV2([pool], usdc, other), 0).gasCostInQuoteToken.quotient.toString()).toBe(
+    gas.gasUsed.mul('20000000000').toString()
+  )
+})
+
+it.each([1, 4663, 8453, 5042])('derives chain %s pool addresses from its factories', (chainId) => {
   const a = new Token(chainId, WBNB.address, 18)
   const b = new Token(chainId, USDT.address, 18)
   const config = getChainConfig(chainId)

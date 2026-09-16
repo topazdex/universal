@@ -122,13 +122,53 @@ it('enables Ethereum in production while retaining the BNB default and existing 
   expect((await request(server).get('/health')).body).toEqual({
     status: 'ok',
     chainId: 56,
-    chainIds: [56, 4663, 8453, 1]
+    chainIds: [56, 4663, 8453, 1, 5042]
   })
   const response = await request(server)
     .get('/quote')
     .query({ ...query, chainId: 1 })
   expect(response.status).toBe(200)
   expect(response.body).toMatchObject({ chainId: 1, quote: '1' })
+})
+
+describe('Arc, which has no wrapped native', () => {
+  const arc = () => {
+    jest.mocked(BoundedRpcProvider.prototype.send).mockResolvedValue('0x13b2')
+    return createApp({ chainId: 5042, rpcUrl: 'http://5042.invalid', subgraphUrl: 'http://graph.invalid/5042' })
+  }
+  const usdc = '0x3600000000000000000000000000000000000000'
+
+  it.each(['native', '0x0000000000000000000000000000000000000000'])(
+    'refuses the native alias %s instead of encoding a wrap against the stub',
+    async (alias) => {
+      const response = await request(arc())
+        .get('/quote')
+        .query({ tokenIn: alias, tokenOut: USDT.address, amount: '1000000' })
+      expect(response.status).toBe(400)
+      expect(response.body.error).toContain('no wrapped native')
+      expect(response.body.error).toContain(usdc)
+      expect(TopazRouter.prototype.route).not.toHaveBeenCalled()
+    }
+  )
+
+  it.each(['ETH', 'USDC'])('rejects the symbol alias %s on Arc', async (alias) => {
+    const response = await request(arc())
+      .get('/quote')
+      .query({ tokenIn: alias, tokenOut: USDT.address, amount: '1000000' })
+    expect(response.status).toBe(400)
+    expect(TopazRouter.prototype.route).not.toHaveBeenCalled()
+  })
+
+  it('quotes the USDC ERC-20 like any other token', async () => {
+    const response = await request(arc())
+      .get('/quote')
+      .query({ tokenIn: usdc, tokenOut: USDT.address, amount: '1000000' })
+    expect(response.status).toBe(200)
+    expect(response.body).toMatchObject({ chainId: 5042, quote: '5042' })
+    const input = jest.mocked(TopazRouter.prototype.route).mock.calls[0][0].currency
+    expect(input.isNative).toBe(false)
+    expect(input.chainId).toBe(5042)
+  })
 })
 
 it('serves Ethereum ETH quotes when its graph is explicitly configured', async () => {

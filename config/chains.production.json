@@ -15,6 +15,10 @@
     {
       "chainId": 1,
       "subgraphCacheTtlMs": 30000
+    },
+    {
+      "chainId": 5042,
+      "subgraphCacheTtlMs": 30000
     }
   ]
 }

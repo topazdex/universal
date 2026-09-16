@@ -4,7 +4,16 @@ export interface ChainDeployment {
   chainId: number
   name: string
   nativeCurrency: { name: string; symbol: string; decimals: number }
-  wrappedNativeAddress: string
+  /**
+   * Unset on a chain with no wrapped native (Arc). Native swap legs are then refused up front,
+   * since the routers' WETH9 slot holds a reverting stub there.
+   */
+  wrappedNativeAddress?: string
+  /**
+   * ERC-20 form of the gas currency when it is not the wrapped native. Arc's gas is native USDC,
+   * whose ERC-20 interface has 6 decimals against the 18-decimal native balance.
+   */
+  gasToken?: { address: string; decimals: number; symbol?: string }
   rpcUrls: string[]
   v2FactoryAddress: string
   v2PoolImplementationAddress: string
@@ -33,7 +42,6 @@ export function registerChain(config: ChainDeployment): void {
     throw new Error(`Incomplete chain configuration for ${config.chainId}`)
   }
   const addresses = [
-    config.wrappedNativeAddress,
     config.v2FactoryAddress,
     config.v2PoolImplementationAddress,
     config.clFactoryAddress,
@@ -42,6 +50,7 @@ export function registerChain(config: ChainDeployment): void {
   ]
   for (const address of addresses) validateAddress(config.chainId, address)
   for (const address of [
+    config.wrappedNativeAddress,
     config.mixedQuoterAddress,
     config.quoterV2Address,
     config.universalRouterAddress,
@@ -51,7 +60,12 @@ export function registerChain(config: ChainDeployment): void {
   }
   const decimals = config.nativeCurrency.decimals
   if (!Number.isInteger(decimals) || decimals < 0 || decimals > 254) throw new Error('Invalid native decimals')
-  for (const token of config.baseTokens ?? []) new Token(config.chainId, token.address, token.decimals, token.symbol)
+  if (!config.wrappedNativeAddress && !config.gasToken) {
+    throw new Error(`Chain ${config.chainId} needs a wrapped native or a gas token to price gas`)
+  }
+  for (const token of [...(config.baseTokens ?? []), ...(config.gasToken ? [config.gasToken] : [])]) {
+    new Token(config.chainId, token.address, token.decimals, token.symbol)
+  }
   chains.set(config.chainId, JSON.parse(JSON.stringify(config)) as ChainDeployment)
 }
 
@@ -68,8 +82,15 @@ export function getChainConfig(chainId: number): ChainDeployment {
   return JSON.parse(JSON.stringify(config)) as ChainDeployment
 }
 
+export function hasWrappedNative(chainId: number): boolean {
+  return getChainConfig(chainId).wrappedNativeAddress !== undefined
+}
+
 export function wrappedNativeOnChain(chainId: number): Token {
   const config = getChainConfig(chainId)
+  if (!config.wrappedNativeAddress) {
+    throw new Error(`Chain ${chainId} (${config.name}) has no wrapped native currency; swap the ERC-20 directly`)
+  }
   return new Token(
     chainId,
     config.wrappedNativeAddress,
@@ -79,10 +100,19 @@ export function wrappedNativeOnChain(chainId: number): Token {
   )
 }
 
+/** The token gas is paid in, as an ERC-20: the wrapped native unless the chain declares otherwise */
+export function gasTokenOnChain(chainId: number): Token {
+  const config = getChainConfig(chainId)
+  if (config.gasToken) {
+    return new Token(chainId, config.gasToken.address, config.gasToken.decimals, config.gasToken.symbol)
+  }
+  return wrappedNativeOnChain(chainId)
+}
+
 export function baseTokensOnChain(chainId: number): Token[] {
   const config = getChainConfig(chainId)
   return [
-    wrappedNativeOnChain(chainId),
+    ...(config.wrappedNativeAddress ? [wrappedNativeOnChain(chainId)] : []),
     ...(config.baseTokens ?? []).map((token) => new Token(chainId, token.address, token.decimals, token.symbol))
   ]
 }
@@ -294,6 +324,49 @@ registerChain({
       address: '0x940181a94A35A4569E4529A3CDfB74e38FD98631',
       decimals: 18,
       symbol: 'AERO'
+    },
+    {
+      address: '0x1aA89C4Ab9884Cb65B759A3Cc3A1690744d687a6',
+      decimals: 18,
+      symbol: 'xTOPAZ'
+    }
+  ]
+})
+
+// Arc records read from topaz-multichain deployments/arc on 2026-09-15 and checked against the
+// chain: factory→implementation links, quoter factories, Permit2 and Multicall3 code. Arc has no
+// wrapped USDC (D48); the on-chain WETH9 slot is Uniswap's reverting stub, so no wrappedNativeAddress
+// is registered and gas is priced in native USDC's 6-decimal ERC-20 interface.
+registerChain({
+  chainId: 5042,
+  name: 'Arc',
+  universalRouterAddress: '0x7B1d8745079C85af80Ff7A7eA7C2C4769Eab5348',
+  subgraphUrl:
+    'https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-chain-arc/r-bbe64a8566cc-768e5bf1fe35525f/gn',
+  mixedQuoterAddress: '0x39A344d192D1D34a6Bee24DCF11093e93Fbb3993',
+  quoterV2Address: '0xA9Cd3aC90513663197E7Fd6c932f63f0C40701be',
+  permit2Address: '0x000000000022D473030F116dDEE9F6B43aC78BA3',
+  nativeCurrency: {
+    name: 'USD Coin',
+    symbol: 'USDC',
+    decimals: 18
+  },
+  gasToken: {
+    address: '0x3600000000000000000000000000000000000000',
+    decimals: 6,
+    symbol: 'USDC'
+  },
+  rpcUrls: ['https://rpc.mainnet.arc.io', 'https://rpc.drpc.mainnet.arc.io'],
+  multicallAddress: '0xcA11bde05977b3631167028862bE2a173976CA11',
+  v2FactoryAddress: '0x1E3aC31cF96b20619c913384C9bf6010A824fB95',
+  v2PoolImplementationAddress: '0x8776BE6cd50BB78414c655bc8bF9e86A0989722F',
+  clFactoryAddress: '0xaa5865dC3A60b25D305226d66fd573021f0D8fFB',
+  clPoolImplementationAddress: '0x2DaA7cF731334b4Cd1c2E4E01E97Ca67F4B9C6AE',
+  baseTokens: [
+    {
+      address: '0x3600000000000000000000000000000000000000',
+      decimals: 6,
+      symbol: 'USDC'
     },
     {
       address: '0x1aA89C4Ab9884Cb65B759A3Cc3A1690744d687a6',

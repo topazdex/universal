@@ -1,4 +1,14 @@
-import { baseTokensOnChain, BNB, getChainConfig, nativeOnChain, registerChain, WBNB } from './index'
+import {
+  baseTokensOnChain,
+  BNB,
+  gasTokenOnChain,
+  getChainConfig,
+  hasWrappedNative,
+  nativeOnChain,
+  registerChain,
+  WBNB,
+  wrappedNativeOnChain
+} from './index'
 
 describe('chain deployments', () => {
   it.each([1, 4663, 8453])('resolves native ETH and routing tokens on %s', (chainId) => {
@@ -36,6 +46,29 @@ describe('chain deployments', () => {
     expect(nativeOnChain(987655).decimals).toBe(6)
     expect(nativeOnChain(987655).wrapped.decimals).toBe(6)
     expect(nativeOnChain(987655).symbol).toBe('GAS')
+  })
+
+  it('registers Arc without a wrapped native and refuses native legs there', () => {
+    const arc = getChainConfig(5042)
+    expect(arc.wrappedNativeAddress).toBeUndefined()
+    expect(arc.universalRouterAddress).toBe('0x7B1d8745079C85af80Ff7A7eA7C2C4769Eab5348')
+    expect(arc.nativeCurrency).toEqual({ name: 'USD Coin', symbol: 'USDC', decimals: 18 })
+    expect(arc.gasToken).toEqual({ address: '0x3600000000000000000000000000000000000000', decimals: 6, symbol: 'USDC' })
+    expect(hasWrappedNative(5042)).toBe(false)
+    expect(hasWrappedNative(8453)).toBe(true)
+    expect(() => nativeOnChain(5042)).toThrow('no wrapped native')
+    expect(() => wrappedNativeOnChain(5042)).toThrow('no wrapped native')
+    expect(gasTokenOnChain(5042).decimals).toBe(6)
+    expect(gasTokenOnChain(8453).address).toBe(getChainConfig(8453).wrappedNativeAddress)
+    // the stub is not a token; only real ERC-20 hubs belong in the routing set
+    expect(baseTokensOnChain(5042).map((token) => token.symbol)).toEqual(['USDC', 'xTOPAZ'])
+    expect(baseTokensOnChain(5042).every((token) => token.chainId === 5042)).toBe(true)
+  })
+
+  it('requires a gas token when no wrapped native exists', () => {
+    expect(() =>
+      registerChain({ ...getChainConfig(8453), chainId: 987657, wrappedNativeAddress: undefined, gasToken: undefined })
+    ).toThrow('gas token')
   })
 
   it('does not expose mutable deployment records', () => {
