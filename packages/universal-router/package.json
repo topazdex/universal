@@ -36,7 +36,8 @@
     "deploy:bsc": "forge script script/deployParameters/DeployBscMainnet.s.sol:DeployBscMainnet --rpc-url bsc --broadcast --verify",
     "deploy:robinhood": "forge script script/deployParameters/DeployRobinhoodMainnet.s.sol:DeployRobinhoodMainnet --rpc-url robinhood --broadcast --slow",
     "deploy:base": "forge script script/deployParameters/DeployBaseMainnet.s.sol:DeployBaseMainnet --rpc-url base --broadcast --slow",
-    "deploy:ethereum": "forge script script/deployParameters/DeployEthereumMainnet.s.sol:DeployEthereumMainnet --rpc-url ethereum --broadcast --slow"
+    "deploy:ethereum": "forge script script/deployParameters/DeployEthereumMainnet.s.sol:DeployEthereumMainnet --rpc-url ethereum --broadcast --slow",
+    "deploy:arc": "forge script script/deployParameters/DeployArcMainnet.s.sol:DeployArcMainnet --rpc-url arc --broadcast --slow"
   },
   "publishConfig": {
     "access": "public"

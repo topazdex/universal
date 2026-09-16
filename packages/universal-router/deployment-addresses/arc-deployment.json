@@ -1,0 +1,56 @@
+{
+  "chainId": 5042,
+  "UniversalRouter": "0x7B1d8745079C85af80Ff7A7eA7C2C4769Eab5348",
+  "transactionHash": "0x2498e94a1a368097ed3e183668f6fab8cf8290bb2001c59c5fbf5eeaccab742b",
+  "blockNumber": 21113580,
+  "blockHash": "0xb3fb125969d98fd1063d65100ab76697d9e63db51a07a8e9a464189da56d08b6",
+  "deployer": "0xd7E8557B8C78E131a9fa893aE12E8c2818234AEA",
+  "nonce": 18,
+  "gasUsed": "3531386",
+  "effectiveGasPriceWei": "39574472285",
+  "transactionFeeUSDC": "0.139752737384637005",
+  "nativeCurrency": "USDC with 18-decimal native balances; the 6-decimal ERC-20 interface is 0x3600000000000000000000000000000000000000",
+  "constructorParameters": {
+    "permit2": "0x000000000022D473030F116dDEE9F6B43aC78BA3",
+    "weth9": "0x8bcEaA40B9AcdfAedF85AdF4FF01F5Ad6517937f",
+    "v2Factory": "0x1E3aC31cF96b20619c913384C9bf6010A824fB95",
+    "v2Implementation": "0x8776BE6cd50BB78414c655bc8bF9e86A0989722F",
+    "clFactory": "0xaa5865dC3A60b25D305226d66fd573021f0D8fFB",
+    "clImplementation": "0x2DaA7cF731334b4Cd1c2E4E01E97Ca67F4B9C6AE"
+  },
+  "weth9Note": "Arc has no wrapped USDC (topaz-multichain decision D48). The slot holds Uniswap's reverting WETH9 stub, the same address used by the Topaz quoters, SwapRouter and position manager on Arc; WRAP_ETH and UNWRAP_WETH revert and receive() rejects native USDC.",
+  "compiler": {
+    "version": "0.8.17+commit.8df45f5f"
+  },
+  "optimizer": {
+    "enabled": true,
+    "runs": 1000000
+  },
+  "evmVersion": "london",
+  "creationInputHash": "0xa6f58ea87eeb4c3110f2985a1996217e3297af0cc6c99f2f1e7b3fa2b1a6086e",
+  "runtimeCodeHash": "0x147aec591fe590b9fc4f1ade5c29803280dbccd74a78153590ea354da6d6e34e",
+  "runtimeCodeBytes": 16003,
+  "creationInputVerified": true,
+  "artifactFile": "arc-router-artifact.json",
+  "artifactSha256": "d4bf119e2881cba8cc4a260a0b76176ebca6dc9daa9d93e53c0f551100fe0a66",
+  "runtimeAndImmutablesVerified": true,
+  "forkSuite": "ArcForkTest, 8 tests against the deployed runtime on an Arc fork (ARC_UNIVERSAL_ROUTER set)",
+  "explorerVerification": "pending: Arc's public explorer was not yet available on 2026-09-16; prepare with script/prepare-verification.cjs arc",
+  "sourceVerification": {
+    "provider": "Sourcify",
+    "status": "pending",
+    "note": "chain 5042 is listed as supported by sourcify.dev/server/chains"
+  },
+  "apiRelease": {
+    "fly": "v19",
+    "date": "2026-09-16",
+    "firstProductionQuote": {
+      "block": 21114169,
+      "pool": "0x04064dd700473Ad9B4e4fB6dc8D39c8A86B641f8",
+      "amountIn": "1000000",
+      "quote": "281164261906855818820",
+      "quoterV2Match": true
+    }
+  },
+  "liveExecution": "USDC swap through the deployed router executed successfully on 2026-09-16 (operator-run)"
+}
