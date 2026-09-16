@@ -1,6 +1,6 @@
 {
   "name": "@topazdex/routing-api",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "HTTP quote service over the Topaz smart order router",
   "license": "GPL-3.0-or-later",
   "author": "Topaz Dex",

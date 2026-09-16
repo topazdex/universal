@@ -1,6 +1,6 @@
 {
   "name": "@topazdex/v2-sdk",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "SDK for Topaz v2 (Solidly) volatile and stable pools",
   "license": "GPL-3.0-or-later",
   "author": "Topaz Dex",

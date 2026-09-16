@@ -1,6 +1,6 @@
 {
   "name": "@topazdex/universal-router",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Topaz Dex Universal Router: one entrypoint for swaps across Topaz v2 (Solidly) and Topaz CL (Slipstream) pools",
   "license": "GPL-3.0-or-later",
   "author": "Topaz Dex",

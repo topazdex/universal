@@ -1,6 +1,6 @@
 {
   "name": "@topazdex/smart-order-router",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Indexes Topaz v2 and CL liquidity and finds the best route between them",
   "license": "GPL-3.0-or-later",
   "author": "Topaz Dex",

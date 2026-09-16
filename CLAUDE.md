@@ -15,7 +15,7 @@ Everything below is live. This is not a prototype.
 | --- | --- |
 | Universal Router | [`0x691e6171e0a434FfE5C9f1759621D05b9efcF6A6`](https://bscscan.com/address/0x691e6171e0a434FfE5C9f1759621D05b9efcF6A6), verified |
 | Quote API | `https://quote.topazdex.com` (Fly app `topaz-routing-api`, two Machines in `ord`; BNB, Robinhood, Base, Ethereum, Arc) |
-| npm | seven packages under `@topazdex`, all at `0.1.0` |
+| npm | seven packages under `@topazdex`, all at `0.1.1` |
 
 ## Layout
 
@@ -185,9 +185,10 @@ in `~/.npmrc` (a normal login session forces an OTP per publish).
   `mainnet.base.org` 429s under light load; `base-rpc.publicnode.com` fails over for it.
 - **No pool-state cache.** Identical quotes hit the response cache, but a quote differing only in
   amount re-reads every pool.
-- **Published packages lag the repo.** All seven `@topazdex` packages are on npm at `0.1.0`, but
-  `repository`/`homepage` metadata was added after that publish, so the npm pages will not link back
-  to GitHub until the next version goes out. `./script/publish.sh` skips a version already on the
-  registry, so shipping the metadata needs a version bump.
+- **Fork tests are expensive on a metered RPC.** Anvil hydrates a fork lazily, one `eth_getStorageAt`
+  per slot, and the helper stops it with `SIGKILL` so nothing is cached between runs: the BNB
+  exact-output tests alone pull ~3,000 upstream calls and exceed the 120 s `eth_call` timeout from a
+  laptop. Do not point `BSC_MAINNET_RPC` at a paid endpoint for casual test runs; those suites
+  self-skip when it is unset. `script/publish.sh` runs `yarn test` before publishing for the same reason.
 - **Position management** (`NonfungiblePositionManager`, `Position`, staker) was deliberately left
   out of `v3-sdk`. This stack routes; it does not manage liquidity.

@@ -1,6 +1,6 @@
 {
   "name": "@topazdex/router-sdk",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Mixed route and multi route trade types spanning Topaz v2 and Topaz CL pools",
   "license": "GPL-3.0-or-later",
   "author": "Topaz Dex",

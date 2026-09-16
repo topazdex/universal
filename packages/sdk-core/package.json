@@ -1,6 +1,6 @@
 {
   "name": "@topazdex/sdk-core",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Shared currency primitives and EVM chain deployment configuration for the Topaz stack",
   "license": "GPL-3.0-or-later",
   "author": "Topaz Dex",
