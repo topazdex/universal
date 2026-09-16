@@ -14,7 +14,7 @@ Everything below is live. This is not a prototype.
 | | |
 | --- | --- |
 | Universal Router | [`0x691e6171e0a434FfE5C9f1759621D05b9efcF6A6`](https://bscscan.com/address/0x691e6171e0a434FfE5C9f1759621D05b9efcF6A6), verified |
-| Quote API | `https://quote.topazdex.com` (Fly app `topaz-routing-api`, two Machines in `ord`; BNB, Robinhood, Base, Ethereum) |
+| Quote API | `https://quote.topazdex.com` (Fly app `topaz-routing-api`, two Machines in `ord`; BNB, Robinhood, Base, Ethereum, Arc) |
 | npm | seven packages under `@topazdex`, all at `0.1.0` |
 
 ## Layout
@@ -50,6 +50,13 @@ dynamic fee module. `PoolFactory.getFee` and `CLFactory.getSwapFee` are part of 
 reverts (`StableExactOutputUnsupported`), the v2 SDK throws (`StableExactOutputError`), and the SOR
 excludes stable and mixed routes from exact-output searches. Do not "fix" this.
 
+**Arc has no wrapped native.** Its gas token is USDC (18-decimal native balance, 6-decimal ERC-20 at
+`0x3600…0000`) and no wrapper exists, so every Topaz contract there — this router included — carries
+Uniswap's reverting WETH9 stub in its `WETH9` slot. The registry has no `wrappedNativeAddress` for 5042,
+`nativeOnChain(5042)` throws, `/quote` returns 400 for native aliases, and the gas model prices in the
+`gasToken`. Never "fill in" a wrapped address for Arc; native USDC's ERC-20 `transfer` also reaches a
+system precompile Anvil cannot run, so fork tests use a six-decimal stand-in token.
+
 **Pool addresses are ERC-1167 clones.** Both factories clone an implementation, so addresses derive
 from `PoolFactory.implementation()` / `CLFactory.poolImplementation()` — not from init code as in
 Uniswap. `DeployedRouterForkTest` guards this.
@@ -73,12 +80,12 @@ the network suites self-skip, which is silent: check the counts below.
 
 | package | tests |
 | --- | --- |
-| universal-router | 46 forge (1 skips without `DEPLOYED_UNIVERSAL_ROUTER`, 3 without spoke RPCs) |
-| smart-order-router | 65 (6 skip without spoke RPCs) |
-| routing-api | 85 |
+| universal-router | 47 forge (1 skips without `DEPLOYED_UNIVERSAL_ROUTER`, 4 without spoke RPCs) |
+| smart-order-router | 69 (8 skip without spoke RPCs) |
+| routing-api | 91 |
 | v2-sdk | 17 |
 | universal-router-sdk | 9 |
-| sdk-core | 15 |
+| sdk-core | 17 |
 | v3-sdk | 6 |
 | router-sdk | 5 |
 

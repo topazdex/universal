@@ -8,6 +8,7 @@ For chain selection, unified subgraphs and the Robinhood deployment, see [multic
 | Robinhood (4663) | [`0x268d1C8a538Ecf6628838C11d581e1EABD13D6A4`](https://repo.sourcify.dev/4663/0x268d1C8a538Ecf6628838C11d581e1EABD13D6A4) | Sourcify ✓ for creation and runtime; Blockscout publication pending |
 | Base (8453) | [`0xe4b23F13b24232C1E68AD0575191216152AA9480`](https://basescan.org/address/0xe4b23F13b24232C1E68AD0575191216152AA9480#code) | BaseScan ✓ |
 | Ethereum (1) | [`0x606794d37991A426a189fD9FA8664D339A77f8ae`](https://etherscan.io/address/0x606794d37991A426a189fD9FA8664D339A77f8ae#code) | Etherscan ✓ |
+| Arc (5042) | `0x7B1d8745079C85af80Ff7A7eA7C2C4769Eab5348` | Pending: Arc's explorer is not yet public. Creation input matches the archived artifact + recorded constructor arguments; `ArcForkTest` passes byte for byte against the live runtime |
 
 Source verification was checked on September 12, 2026 UTC. Published sources on the three
 Etherscan-family explorers match the 60-file compiler input reproduced locally; Base and
@@ -17,6 +18,14 @@ on direct API calls, while authenticated shared-API submissions and Sourcify imp
 HTTP 500. The Blockscout key works for read requests, but its explorer has not published the
 verification. [Verification evidence](evidence/universal-router-source-verification-2026-09-12.json)
 records the individual results. This table covers the Universal Routers deployed by this repo.
+
+Arc was deployed on September 16, 2026 UTC (September 15 in Vancouver), block **21113580**, in
+[`0x2498e94a…742b`](https://explorer.arc.io/tx/0x2498e94a1a368097ed3e183668f6fab8cf8290bb2001c59c5fbf5eeaccab742b),
+for 3,531,386 gas and **0.1398 USDC**. Its creation code is byte-identical to the Robinhood, Base and
+Ethereum routers, so [the shared verification manifest](../packages/universal-router/deployment-addresses/router-verification-manifest.json)
+applies; `node script/prepare-verification.cjs arc <dir>` reproduces the compiler input and constructor
+arguments (Sourcify lists chain 5042 as supported). The `weth9` parameter is Uniswap's reverting stub,
+not a wrapped token — see [Arc in the multichain guide](MULTICHAIN.md#arc-no-wrapped-native).
 
 To re-verify a deployment, or to run the whole behavioural suite against the live contract rather
 than one deployed into the fork:

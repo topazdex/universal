@@ -1,6 +1,6 @@
 # Deploying the routing API
 
-For chain selection, unified subgraphs and the Robinhood, Base and Ethereum deployments, see [multichain setup](MULTICHAIN.md). The Fly deployment enables all four chains; single-chain examples below retain chain 56 as the default.
+For chain selection, unified subgraphs and the Robinhood, Base, Ethereum and Arc deployments, see [multichain setup](MULTICHAIN.md). The Fly deployment enables all five chains; single-chain examples below retain chain 56 as the default.
 
 The service is stateless: it holds a pool-list cache in memory and nothing else. Scale it
 horizontally, restart it freely, and point it at a good RPC — that last part is what determines
@@ -74,7 +74,7 @@ excluded.
 ### Fly.io
 
 `fly.toml` loads `/app/config/chains.production.json`, which the Dockerfile includes in the runtime
-image. It enables BNB (56, default), Robinhood (4663), Base (8453) and Ethereum (1) using their recorded contracts,
+image. It enables BNB (56, default), Robinhood (4663), Base (8453), Ethereum (1) and Arc (5042) using their recorded contracts,
 subgraphs and public RPCs. Deploy from the repo root — the Dockerfile needs the whole workspace as
 build context. With `CHAINS_CONFIG_FILE` set, per-chain settings come from that JSON file; the
 single-chain environment variables above do not apply. Keep private RPC URLs out of the committed
@@ -90,7 +90,7 @@ Then:
 
 ```bash
 curl -s https://topaz-routing-api.fly.dev/health
-# {"status":"ok","chainId":56,"chainIds":[56,4663,8453,1]}
+# {"status":"ok","chainId":56,"chainIds":[56,4663,8453,1,5042]}
 ```
 
 Choices baked into `fly.toml`, and when to change them:
@@ -280,7 +280,7 @@ Per-chain defaults and overrides:
 2. `chains[].baseTokens` in `CHAINS_CONFIG_FILE`, or `ROUTING_BASE_TOKENS` for a single-chain server. A nonempty override replaces the preset; include wrapped native explicitly if desired.
 3. `baseTokens` on `RoutingConfig` — per call, for programmatic SDK use.
 
-See [the researched starter lists](INTERMEDIARY_TOKENS.md) for Robinhood, Base and Ethereum
+See [the researched starter lists](INTERMEDIARY_TOKENS.md) for Robinhood, Base, Ethereum and Arc
 addresses, decimals, selection notes and current liquidity limitations.
 
 A token earns a place by *connecting* pairs, not by being popular: it needs live pools with more

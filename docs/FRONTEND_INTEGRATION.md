@@ -2,6 +2,8 @@
 
 For chain selection, unified subgraphs and the Robinhood deployment, see [multichain setup](MULTICHAIN.md). BNB examples below retain chain 56 as the default.
 
+**Arc (5042) has no native swap leg.** Its gas token is USDC with no wrapped form, so `tokenIn`/`tokenOut` of `native`, the zero address or `USDC` return 400 there; pass the USDC ERC-20 `0x3600000000000000000000000000000000000000` (6 decimals) like any other token. Do not offer a native option in the swap UI on Arc, and never send `value` with Arc router calldata: the router's `WRAP_ETH`/`UNWRAP_WETH` commands revert on that chain by design.
+
 How to get a quote from the Topaz routing API and execute it through the Topaz Universal Router.
 
 The service does the routing, the pricing and the calldata encoding. The frontend does three things:

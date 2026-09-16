@@ -1,6 +1,6 @@
 # topazdex-universal
 
-Quotes support per-chain EVM deployments, including BNB Chain, Robinhood, Base and Ethereum. See [multichain setup and deployment status](docs/MULTICHAIN.md).
+Quotes support per-chain EVM deployments, including BNB Chain, Robinhood, Base, Ethereum and Arc. See [multichain setup and deployment status](docs/MULTICHAIN.md).
 
 Routing stack for [Topaz Dex](https://topazdex.com) on BNB Chain (chain id 56). It prices a swap
 across **Topaz CL** (Slipstream concentrated liquidity) and **Topaz v2** (Solidly volatile and

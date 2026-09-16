@@ -12,6 +12,7 @@ records the image, runtime configuration and production quote checks.
 | Robinhood (4663) | WETH, USDG, xTOPAZ                                        |
 | Base (8453)      | WETH, USDC, cbBTC, wstETH, cbETH, EURC, AERO, xTOPAZ      |
 | Ethereum (1)     | WETH, USDC, USDT, DAI, USDS, WBTC, cbBTC, wstETH, xTOPAZ  |
+| Arc (5042)       | USDC, xTOPAZ (no wrapped native exists)                   |
 
 ## What the lists do
 
@@ -23,7 +24,8 @@ They can improve coverage; they do not guarantee a route. Discovery still consid
 are not comparable USD liquidity rankings.
 
 ETH swaps use WETH inside pools. `baseTokensOnChain()` automatically includes the chain's
-wrapped native token; the registry's `baseTokens` array adds the other tokens below.
+wrapped native token when one exists; the registry's `baseTokens` array adds the other tokens below.
+Arc has none, so its list is only the `baseTokens` entries.
 PONS does not need a preset for an ETH/PONS quote: both endpoints are always eligible.
 Its Robinhood address is `0x39dBED3a2bd333467115dE45665cC57F813C4571`.
 
@@ -49,6 +51,23 @@ Neither PONS nor xTOPAZ connected two counterparties in that snapshot; xTOPAZ
 is included in anticipation of protocol liquidity. A PONS preset can be added if it becomes
 a hub. Further Robinhood stablecoins or BTC wrappers need a verified chain-specific address
 and evidence of useful Topaz pools before promotion into this small starter list.
+
+## Arc
+
+Arc's gas token is USDC itself, with an 18-decimal native balance and a 6-decimal ERC-20
+interface at `0x3600…0000` on the same balance. There is no wrapped USDC and Circle states none
+is planned, so every Arc pool holds the ERC-20 interface directly and USDC is the only dollar
+hub. xTOPAZ is our protocol-specific addition. Both were checked on chain on September 15,
+2026 (`symbol()`/`decimals()` and code presence) against the Arc deployment records in
+`topaz-multichain`.
+
+| Token  | Decimals | Address                                      | Address source                                                                 |
+| ------ | -------: | -------------------------------------------- | ------------------------------------------------------------------------------ |
+| USDC   |        6 | `0x3600000000000000000000000000000000000000` | [Arc contract reference](https://docs.arc.io/arc/references/contract-addresses) |
+| xTOPAZ |       18 | `0x1aA89C4Ab9884Cb65B759A3Cc3A1690744d687a6` | Our Arc deployment (`topaz-multichain/topaz-xchain/deployments/arc/XTopazOFT.json`) |
+
+The registry also records USDC as Arc's `gasToken`, so the gas model prices fees in it (dividing
+the 18-decimal native fee by 10¹²) instead of in a wrapped native that does not exist.
 
 ## Base
 
