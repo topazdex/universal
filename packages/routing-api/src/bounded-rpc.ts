@@ -1,8 +1,13 @@
 import { StaticJsonRpcProvider } from '@ethersproject/providers'
-import { spendRpcCall, WorkGate } from './work-budget'
+import { spendRpcCall, WorkGate, WorkGateState } from './work-budget'
 
 const gate = new WorkGate()
 let nextId = 1
+
+/** For /health: a full gate with an empty queue is a process that cannot quote */
+export function rpcGateState(): WorkGateState {
+  return gate.state()
+}
 
 /** Node 22 transport: aborts sockets and response bodies, without ethers' hidden HTTP retries. */
 export class BoundedRpcProvider extends StaticJsonRpcProvider {
@@ -19,6 +24,9 @@ export class BoundedRpcProvider extends StaticJsonRpcProvider {
     const abort = () => controller.abort(parent?.reason)
     parent?.addEventListener('abort', abort, { once: true })
     const timer = setTimeout(() => controller.abort(new Error('RPC request timeout')), this.timeoutMs)
+    // which await a request that outlives its abort was stuck on; only the host is logged, a
+    // private endpoint may carry its key in the path
+    let phase = 'connecting'
     try {
       return await gate.run(controller.signal, async () => {
         const id = nextId++
@@ -27,11 +35,12 @@ export class BoundedRpcProvider extends StaticJsonRpcProvider {
           body: JSON.stringify({ jsonrpc: '2.0', id, method, params }),
           signal: controller.signal, redirect: 'error'
         })
-        if (!response.ok) { await response.body?.cancel(); throw new Error(`RPC HTTP ${response.status}`) }
+        if (!response.ok) { phase = 'cancelling'; await response.body?.cancel(); throw new Error(`RPC HTTP ${response.status}`) }
         const reader = response.body?.getReader()
         if (!reader) throw new Error('RPC returned no body')
         const chunks: Uint8Array[] = []
         let size = 0
+        phase = 'reading'
         try {
           for (;;) {
             const { done, value } = await reader.read()
@@ -40,7 +49,7 @@ export class BoundedRpcProvider extends StaticJsonRpcProvider {
             if (size > 4 * 1024 * 1024) throw new Error('RPC response too large')
             chunks.push(value)
           }
-        } finally { await reader.cancel().catch(() => undefined) }
+        } finally { phase = 'cancelling'; await reader.cancel().catch(() => undefined); phase = 'parsing' }
         const body = JSON.parse(Buffer.concat(chunks).toString('utf8'))
         if (body.id !== id || body.jsonrpc !== '2.0') throw new Error('Invalid RPC envelope')
         if (body.error) {
@@ -49,7 +58,7 @@ export class BoundedRpcProvider extends StaticJsonRpcProvider {
         }
         if (!Object.prototype.hasOwnProperty.call(body, 'result')) throw new Error('Missing RPC result')
         return body.result
-      })
+      }, () => `${method} to ${new URL(this.connection.url).host} while ${phase}`)
     } finally { clearTimeout(timer); parent?.removeEventListener('abort', abort) }
   }
 }

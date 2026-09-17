@@ -1,6 +1,6 @@
 import request from 'supertest'
 import { createApp, parseQuoteQuery, serverConfigFromEnv } from './server'
-import { BoundedRpcProvider } from './bounded-rpc'
+import { BoundedRpcProvider, rpcGateState } from './bounded-rpc'
 import { withQuoteBudget, WorkGate } from './work-budget'
 import { ResponseCache } from './cache'
 import { resolve } from 'path'
@@ -63,6 +63,63 @@ it('counts shared RPC slots, removes aborted waiters and recovers capacity', asy
   await expect(queued).rejects.toThrow('cancelled')
   release(); await first
   await expect(gate.run(new AbortController().signal, async () => 2)).resolves.toBe(2)
+})
+
+it('reclaims the slot of a task that never settles after its signal aborts', async () => {
+  // #given a one-slot gate whose only task ignores its abort signal
+  const gate = new WorkGate(1, 1, 20), controller = new AbortController()
+  const stuck = gate.run(controller.signal, () => new Promise<never>(() => undefined), () => 'stuck task')
+  const log = jest.spyOn(console, 'error').mockImplementation(() => undefined)
+  // #when the signal aborts and the grace period passes
+  controller.abort(new Error('RPC request timeout'))
+  await expect(stuck).rejects.toThrow('RPC request timeout')
+  // #then the slot is free again and the reclaim was recorded
+  await expect(gate.run(new AbortController().signal, async () => 'next')).resolves.toBe('next')
+  expect(gate.state()).toMatchObject({ active: 0, queued: 0, capacity: 1, abandoned: 1 })
+  expect(log).toHaveBeenCalledWith(expect.stringContaining('stuck task'))
+})
+
+it('does not count a task that settles promptly after abort as abandoned', async () => {
+  const gate = new WorkGate(1, 1, 20), controller = new AbortController()
+  const prompt = gate.run(controller.signal, () => new Promise<never>((_resolve, reject) => {
+    controller.signal.addEventListener('abort', () => reject(controller.signal.reason))
+  }))
+  controller.abort(new Error('cancelled'))
+  await expect(prompt).rejects.toThrow('cancelled')
+  await new Promise(resolve => setTimeout(resolve, 40))
+  expect(gate.state()).toMatchObject({ active: 0, abandoned: 0 })
+})
+
+it('reports a full gate on which nothing settles as stuck', async () => {
+  // #given a gate whose only slot is held by a task that neither settles nor is aborted
+  const gate = new WorkGate(1, 1, 10_000, 20)
+  void gate.run(new AbortController().signal, () => new Promise<never>(() => undefined))
+  expect(gate.state().stuck).toBe(false)
+  // #when longer than any task is allowed to run passes with no progress
+  await new Promise(resolve => setTimeout(resolve, 40))
+  // #then the gate says so, and an idle gate never does
+  expect(gate.state().stuck).toBe(true)
+  expect(new WorkGate(1, 1, 10_000, 20).state().stuck).toBe(false)
+})
+
+it('a fetch that outlives its abort cannot wedge the shared RPC gate', async () => {
+  // #given an endpoint whose fetch ignores the abort signal entirely, as undici rarely does
+  jest.spyOn(globalThis, 'fetch').mockImplementation(() => new Promise<never>(() => undefined))
+  jest.spyOn(console, 'error').mockImplementation(() => undefined)
+  const provider = new BoundedRpcProvider('https://stuck.invalid', 56, 50)
+  // #when more requests than the gate holds all hang
+  const started = Date.now()
+  const results = await Promise.allSettled(Array.from({ length: 30 }, () => provider.send('eth_blockNumber', [])))
+  // #then every one fails as a timeout within the grace window, and every slot the hung fetches
+  // held was reclaimed; the rest timed out in the queue without ever holding one
+  expect(results.map(result => result.status === 'rejected' ? String(result.reason.message) : 'ok')).toEqual(Array(30).fill('RPC request timeout'))
+  expect(Date.now() - started).toBeLessThan(3_000)
+  expect(rpcGateState()).toMatchObject({ active: 0, queued: 0, capacity: 12, abandoned: 12 })
+})
+
+it('health reports the shared RPC gate', async () => {
+  const response = await request(createApp({ rpcUrl: 'http://unused.invalid' })).get('/health')
+  expect(response.body.rpc).toMatchObject({ active: 0, queued: 0, capacity: 12 })
 })
 
 it('an older failed computation cannot evict a successful explicit refresh', async () => {

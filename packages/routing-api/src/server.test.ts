@@ -42,7 +42,7 @@ describeIfRpc('routing-api', () => {
     const response = await request(app).get('/health')
 
     expect(response.status).toEqual(200)
-    expect(response.body).toEqual({ status: 'ok', chainId: 56 })
+    expect(response.body).toMatchObject({ status: 'ok', chainId: 56, rpc: { active: 0, queued: 0 } })
   })
 
   it('quotes native BNB into USDT and describes the hops it chose', async () => {

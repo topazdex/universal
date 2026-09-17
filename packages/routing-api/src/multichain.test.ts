@@ -110,7 +110,7 @@ it('rejects an RPC connected to a different chain before quoting', async () => {
 })
 
 it('reports enabled chain IDs', async () => {
-  expect((await request(app()).get('/health')).body).toEqual({ status: 'ok', chainId: 4663, chainIds: [4663, 8453] })
+  expect((await request(app()).get('/health')).body).toMatchObject({ status: 'ok', chainId: 4663, chainIds: [4663, 8453] })
 })
 
 it('enables Ethereum in production while retaining the BNB default and existing chains', async () => {
@@ -119,7 +119,7 @@ it('enables Ethereum in production while retaining the BNB default and existing 
     CHAINS_CONFIG_FILE: resolve(__dirname, '../../../config/chains.production.json')
   })
   const server = createApp(config)
-  expect((await request(server).get('/health')).body).toEqual({
+  expect((await request(server).get('/health')).body).toMatchObject({
     status: 'ok',
     chainId: 56,
     chainIds: [56, 4663, 8453, 1, 5042]

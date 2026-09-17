@@ -11,7 +11,7 @@ import {
 import express, { Express, NextFunction, Request, Response } from 'express'
 
 import { ResponseCache } from './cache'
-import { BoundedRpcProvider } from './bounded-rpc'
+import { BoundedRpcProvider, rpcGateState } from './bounded-rpc'
 import { quoteProtection } from './protection'
 import { WorkLimitError } from './work-budget'
 import { BadRequestError, QuotePermit, QuoteResponse, QuoteService } from './quote'
@@ -147,8 +147,11 @@ export function createApp(config: ServerConfig): Express {
   app.use('/quote', quoteProtection())
   app.use(express.json({ limit: '16kb', strict: true }))
 
+  // a process whose RPC gate is stuck answers every quote with a timeout; failing the check
+  // takes it out of the load balancer instead of letting it serve half the traffic as 502s
   app.get('/health', (_request: Request, response: Response) => {
-    response.json({ status: 'ok', chainId, ...(config.chains ? { chainIds: [...services.keys()] } : {}) })
+    const rpc = rpcGateState()
+    response.status(rpc.stuck ? 503 : 200).json({ status: rpc.stuck ? 'degraded' : 'ok', chainId, ...(config.chains ? { chainIds: [...services.keys()] } : {}), rpc })
   })
 
   // POST carries a Permit2 signature comfortably; GET stays for simple quotes and links
