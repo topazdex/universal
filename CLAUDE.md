@@ -122,6 +122,15 @@ data", with the real error under `error.error`. Anything that classifies RPC fai
 to the innermost cause (`multicall.ts` does), and a test that mocks `provider.call` never sees the
 wrapper — inject at `send`.
 
+**A leaked RPC gate slot looks like a dead RPC provider.** The API funnels every `eth_call` on every
+chain through one 12-slot `WorkGate`. When a Machine reports `no healthy RPC endpoint could report a
+block number` or `RPC request timeout` on *all* chains at once while the endpoints answer a fresh
+`node` process on the same Machine in 200 ms, the gate is full, not the network. `/health` shows it
+(`rpc.active`, `rpc.abandoned`, `rpc.stuck`) and goes 503 when stuck; `curl -H "fly-force-instance-id:
+<machine>"` isolates one Machine, and `kill -USR1` on the node process opens a localhost inspector
+that can read the gate through `BoundedRpcProvider.prototype.send`'s `[[Scopes]]`. The cause was
+fetches that never settled after abort; the gate now reclaims those and logs the phase they hung in.
+
 **Tuning parameters interact.** `maxRoutesToQuote` derives from the route count; when local
 pre-ranking narrowed that count, the screen silently shrank from 13 survivors to 5 and quotes lost up
 to 50 bips. Screen width now follows routes *found*. Any change near `topaz-router.ts`'s limits needs
