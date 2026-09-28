@@ -60,11 +60,13 @@ The adapter follows `../topaz-api/topaz-spoke-subgraph/schema.graphql`. Both v2 
 
 The unified schema has no USD reserve field. Unpriced pools remain discoverable; v2 candidates are ordered by raw token0 reserves and CL candidates by liquidity. As before, discovery is bounded by `subgraphPoolCount` (default 500 per protocol). These rankings are not cross-token USD comparisons. Final reserves, liquidity and fees come from RPC at the quote block.
 
-BNB continues using its existing separate v2/v3 graphs. Setting its `subgraphUrl` switches it to the unified adapter. Robinhood is pinned to the version supplied at deployment:
+BNB continues using its existing separate v2/v3 graphs. Setting its `subgraphUrl` switches it to the unified adapter. Every spoke chain reads its Goldsky `prod` tag rather than a specific deployment, so promoting a new subgraph moves the router with it. Robinhood's is:
 
 ```text
-https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-chain-robinhood/r-8b4f23a5d335-4f8e4a2e72c2beff/gn
+https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-chain-robinhood/prod/gn
 ```
+
+Until September 28, 2026 the SDK pinned `r-…` deployment paths instead. Goldsky deleted the Robinhood and Arc deployments when both subgraphs were redeployed on September 26, the pinned URLs answered 404, and pool discovery on both chains failed until the tags replaced them in Fly **v21** on September 28, 2026 UTC.
 
 Both queries succeeded against the Robinhood and Base endpoints at initial deployment on September 11, 2026 (Vancouver), when both graphs and their factories reported zero pools. Robinhood now indexes liquid CL pools, including WETH/PONS. Exact-input and exact-output quotes for that pair and simulations of their returned Universal Router calldata passed after the discovery-cache fix. A pair still needs indexed liquidity to produce a route.
 
@@ -119,7 +121,8 @@ Arc contract addresses (factories, implementations, quoters) were read from `top
 `deployments/arc` records and checked against the chain on September 15, 2026 (Vancouver):
 `PoolFactory.implementation()`, `CLFactory.poolImplementation()`, both quoters' `factory()`/`WETH9()`,
 and code at Permit2 and Multicall3 all matched. The unified graph is
-`topaz-chain-arc/r-bbe64a8566cc-768e5bf1fe35525f`, reporting `chainId` 5042 with no indexing errors.
+`topaz-chain-arc/prod` (deployment `r-bbe64a8566cc-768e5bf1fe35525f` at activation), reporting `chainId` 5042
+with no indexing errors.
 
 ## Add another EVM chain
 
@@ -163,7 +166,7 @@ The [Base deployment record](../packages/universal-router/deployment-addresses/b
 Base's `MixedRouteQuoterV1` is `0xA9Cd3aC90513663197E7Fd6c932f63f0C40701be` and `QuoterV2` is `0x2e7395A6E0De6eE1f390bEcE891069Cd18Ff8572`. They differ from Robinhood's; the SDK selects them by chain ID.
 
 ```text
-https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-chain-base/r-8b4f23a5d335-b4f259122be58576/gn
+https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-chain-base/prod/gn
 ```
 
 Run the same five contract checks with `BASE_RPC_URL` and `BASE_UNIVERSAL_ROUTER` set, selecting `--match-contract BaseForkTest`. `packages/smart-order-router/src/spokes.test.ts` also tests complete exact-input and exact-output quotes followed by execution on local forks of both spokes. Set `ROBINHOOD_RPC_URL` and `BASE_RPC_URL` to run those tests; public subgraph discovery is replaced only for the temporary fork pools.

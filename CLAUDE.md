@@ -113,6 +113,12 @@ versions) and publishes with npm.
 **A new npm package 404s on read for a few minutes after a successful publish.** Check
 `npm access list packages @topazdex` before concluding a publish failed.
 
+**Goldsky deletes superseded subgraph deployments.** A URL that names an `r-…` deployment 404s as
+soon as that deployment is replaced, and pool discovery on that chain fails outright; Robinhood and
+Arc went dark this way on 2026-09-26. Reference the `prod` tag
+(`…/subgraphs/topaz-chain-<chain>/prod/gn`) so promotion moves the router, and read what each tag
+points at with `goldsky subgraph list`.
+
 **The Permit2 EIP-712 domain has no `version` field.** Adding one yields a valid-looking signature
 that the router rejects.
 

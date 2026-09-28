@@ -30,7 +30,7 @@ describe('chain deployments', () => {
     const ethereum = getChainConfig(1)
     expect(ethereum.wrappedNativeAddress).toBe('0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2')
     expect(ethereum.subgraphUrl).toBe(
-      'https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-chain-ethereum/r-8b4f23a5d335-51fb901bfc78d0a8/gn'
+      'https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-chain-ethereum/prod/gn'
     )
     expect(ethereum.v2SubgraphUrl).toBeUndefined()
     expect(ethereum.v3SubgraphUrl).toBeUndefined()

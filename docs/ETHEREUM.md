@@ -43,7 +43,7 @@ v2 factory also matches.
 The unified graph uses `../topaz-api/topaz-spoke-subgraph/schema.graphql`:
 
 ```text
-https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-chain-ethereum/r-8b4f23a5d335-51fb901bfc78d0a8/gn
+https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-chain-ethereum/prod/gn
 ```
 
 At activation it reported chain ID 1, no indexing errors, and had indexed past all factory

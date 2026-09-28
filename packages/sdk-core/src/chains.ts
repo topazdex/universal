@@ -124,7 +124,7 @@ registerChain({
   name: 'Ethereum',
   universalRouterAddress: '0x606794d37991A426a189fD9FA8664D339A77f8ae',
   subgraphUrl:
-    'https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-chain-ethereum/r-8b4f23a5d335-51fb901bfc78d0a8/gn',
+    'https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-chain-ethereum/prod/gn',
   mixedQuoterAddress: '0x39A344d192D1D34a6Bee24DCF11093e93Fbb3993',
   quoterV2Address: '0xA9Cd3aC90513663197E7Fd6c932f63f0C40701be',
   nativeCurrency: {
@@ -239,7 +239,7 @@ registerChain({
   chainId: 4663,
   universalRouterAddress: '0x268d1C8a538Ecf6628838C11d581e1EABD13D6A4',
   subgraphUrl:
-    'https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-chain-robinhood/r-8b4f23a5d335-4f8e4a2e72c2beff/gn',
+    'https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-chain-robinhood/prod/gn',
   permit2Address: '0x000000000022D473030F116dDEE9F6B43aC78BA3',
   name: 'Robinhood',
   nativeCurrency: {
@@ -275,7 +275,7 @@ registerChain({
   chainId: 8453,
   universalRouterAddress: '0xe4b23F13b24232C1E68AD0575191216152AA9480',
   subgraphUrl:
-    'https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-chain-base/r-8b4f23a5d335-b4f259122be58576/gn',
+    'https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-chain-base/prod/gn',
   mixedQuoterAddress: '0xA9Cd3aC90513663197E7Fd6c932f63f0C40701be',
   quoterV2Address: '0x2e7395A6E0De6eE1f390bEcE891069Cd18Ff8572',
   permit2Address: '0x000000000022D473030F116dDEE9F6B43aC78BA3',
@@ -342,7 +342,7 @@ registerChain({
   name: 'Arc',
   universalRouterAddress: '0x7B1d8745079C85af80Ff7A7eA7C2C4769Eab5348',
   subgraphUrl:
-    'https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-chain-arc/r-bbe64a8566cc-768e5bf1fe35525f/gn',
+    'https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-chain-arc/prod/gn',
   mixedQuoterAddress: '0x39A344d192D1D34a6Bee24DCF11093e93Fbb3993',
   quoterV2Address: '0xA9Cd3aC90513663197E7Fd6c932f63f0C40701be',
   permit2Address: '0x000000000022D473030F116dDEE9F6B43aC78BA3',
