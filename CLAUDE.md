@@ -15,7 +15,7 @@ Everything below is live. This is not a prototype.
 | --- | --- |
 | Universal Router | [`0x691e6171e0a434FfE5C9f1759621D05b9efcF6A6`](https://bscscan.com/address/0x691e6171e0a434FfE5C9f1759621D05b9efcF6A6), verified |
 | Quote API | `https://quote.topazdex.com` (Fly app `topaz-routing-api`, two Machines in `ord`; BNB, Robinhood, Base, Ethereum, Arc) |
-| npm | seven packages under `@topazdex`, all at `0.1.1` |
+| npm | seven packages under `@topazdex`, all at `0.1.2` |
 
 ## Layout
 

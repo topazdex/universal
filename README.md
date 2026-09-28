@@ -33,7 +33,7 @@ carries executable calldata.
 
 ## Packages
 
-All published under `@topazdex` at `0.1.1`.
+All published under `@topazdex` at `0.1.2`.
 
 | package | what it does |
 | --- | --- |
