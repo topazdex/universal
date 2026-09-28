@@ -71,7 +71,9 @@ for package in "${PACKAGES[@]}"; do
   echo
   echo "==> $package@$version"
 
-  if ! $DRY_RUN && yarn npm info "$package@$version" --json >/dev/null 2>&1; then
+  # `yarn npm info` exits 0 for any version of a package that exists at all, so it would skip every
+  # publish after the first; npm's 404 on a missing version is the reliable signal
+  if ! $DRY_RUN && npm view "$package@$version" version --registry https://registry.npmjs.org >/dev/null 2>&1; then
     echo "    already published, skipping"
     continue
   fi
