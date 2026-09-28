@@ -204,6 +204,6 @@ in `~/.npmrc` (a normal login session forces an OTP per publish).
   per slot, and the helper stops it with `SIGKILL` so nothing is cached between runs: the BNB
   exact-output tests alone pull ~3,000 upstream calls and exceed the 120 s `eth_call` timeout from a
   laptop. Do not point `BSC_MAINNET_RPC` at a paid endpoint for casual test runs; those suites
-  self-skip when it is unset. `script/publish.sh` runs `yarn test` before publishing for the same reason.
+  self-skip when it is unset. `script/publish.sh` runs `yarn test` before publishing for the same reason; `--skip-tests` bypasses it when the suites have already run on the tree.
 - **Position management** (`NonfungiblePositionManager`, `Position`, staker) was deliberately left
   out of `v3-sdk`. This stack routes; it does not manage liquidity.

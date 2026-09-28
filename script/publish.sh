@@ -5,6 +5,7 @@
 #   ./script/publish.sh --dry-run           # packs everything, publishes nothing
 #   ./script/publish.sh --otp=123456        # interactive login: npm asks for a 2FA code
 #   ./script/publish.sh                     # automation token in ~/.npmrc: no code needed
+#   ./script/publish.sh --skip-tests        # suites already green on this exact tree
 #
 # An automation token (npmjs.com -> Access Tokens -> Granular, with publish rights) bypasses 2FA,
 # which is what CI wants. A normal `npm login` session still requires --otp on every publish.
@@ -18,10 +19,12 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 DRY_RUN=false
+SKIP_TESTS=false
 OTP=""
 for arg in "$@"; do
   case "$arg" in
     --dry-run) DRY_RUN=true ;;
+    --skip-tests) SKIP_TESTS=true ;;
     --otp=*) OTP="${arg#--otp=}" ;;
     *) echo "unknown argument: $arg" >&2; exit 1 ;;
   esac
@@ -56,7 +59,9 @@ fi
 echo "==> building"
 yarn build
 
-if ! $DRY_RUN; then
+# `yarn test` forks BNB through BSC_MAINNET_RPC, roughly 3,000 upstream calls on a metered
+# endpoint. Skip it only when the suites have already run on exactly this tree.
+if ! $DRY_RUN && ! $SKIP_TESTS; then
   echo "==> testing"
   yarn test
 fi
